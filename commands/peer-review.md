@@ -1,57 +1,50 @@
 ---
-description: "Iterative peer review using an external AI agent (claude, codex, or gemini) with automatic fix cycles. Runs N rounds of: external agent audits → Claude fixes → repeat."
-argument-hint: "<agent> <rounds> [focus area or file path]"
+description: "Iterative peer review using an external AI agent (claude, codex, or gemini) with automatic fix cycles. Runs N rounds of: external agent audits -> Claude fixes -> repeat."
+argument-hint: "[--model claude|codex|gemini] [--max-rounds N] [focus area or file path]"
+allowed-tools: ["Bash(${CLAUDE_PLUGIN_ROOT}/scripts:*)"]
 ---
 
 # /peer-review - Iterative AI peer review with fix cycles
 
 Runs an external AI agent to audit the codebase, then fixes the findings in the current session. Repeats for the specified number of rounds.
 
-Usage: /peer-review <agent> <rounds> [focus area or file path]
+Usage: /peer-review [--model claude|codex|gemini] [--max-rounds N] [focus area or file path]
 
-- agent: claude, codex, or gemini
-- rounds: number of review-fix cycles (1-10)
+- --model: which AI agent CLI to use for review (default: claude)
+- --max-rounds: number of review-fix cycles, 1-10 (default: 5)
 - focus: optional file path or topic (e.g. "error handling", "src/api.py")
 
 Examples:
-  /peer-review codex 3
-  /peer-review claude 2 src/auth/
-  /peer-review gemini 1 error handling
+  /peer-review
+  /peer-review --model codex --max-rounds 3
+  /peer-review --model claude --max-rounds 2 src/auth/
+  /peer-review --model gemini --max-rounds 1 error handling
 
 ## Instructions
 
-### 1. Parse arguments from $ARGUMENTS
+### 1. Parse arguments
 
-Split $ARGUMENTS into three parts:
-- First word: the agent name (must be one of: claude, codex, gemini)
-- Second word: the number of rounds (must be a positive integer, max 10)
-- Remaining words (if any): the focus area or file path
+Run the argument parser:
 
-If the agent name is missing or invalid, print the usage line above and stop.
-If the number of rounds is missing or not a valid number, default to 1.
+  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/parse_args.py" $ARGUMENTS
 
-### 2. Validate the agent CLI is available
+This returns a JSON object. If the "error" field is true, print the "message" to the user and stop — do not proceed with the review loop.
 
-Run `which <agent>` to confirm the CLI is installed. For claude, check `which claude`. For codex, check `which codex`. For gemini, check `which gemini`.
+Otherwise, extract "model", "max_rounds", and "focus" from the JSON output.
 
-If the CLI is not found, tell the user to install it and stop:
-- claude: "Install Claude Code: see https://docs.anthropic.com/en/docs/claude-code"
-- codex: "Install Codex CLI: npm install -g @openai/codex"
-- gemini: "Install Gemini CLI: npm install -g @anthropic-ai/gemini-cli or see https://github.com/google-gemini/gemini-cli"
-
-### 3. Gather project context
+### 2. Gather project context
 
 Run these commands to understand the project:
-- `git status` to see current state
-- `git diff --stat HEAD` to see recent changes
+- git status to see current state
+- git diff --stat HEAD to see recent changes
 - Check for common project files (package.json, Cargo.toml, pyproject.toml, go.mod, etc.)
 - Note the current working directory and primary language
 
-### 4. Run the review-fix loop
+### 3. Run the review-fix loop
 
-For each round (1 through N):
+For each round (1 through max_rounds):
 
-#### 4a. Build the audit prompt
+#### 3a. Build the audit prompt
 
 Start with this base prompt:
 
@@ -65,9 +58,9 @@ Then append context:
   - Otherwise, add: "Focus on this category: <topic>"
 - If no focus area, add: "Do a broad sweep of the entire codebase."
 
-#### 4b. Execute the review agent
+#### 3b. Execute the review agent
 
-Run the appropriate CLI command based on the chosen agent:
+Run the appropriate CLI command based on the chosen model. Write the full prompt to a temporary file first to avoid shell quoting issues, then pass it via stdin or file reference.
 
 For codex:
   codex exec -s read-only "<full_prompt>"
@@ -78,17 +71,17 @@ For claude:
 For gemini:
   gemini -p "<full_prompt>" --sandbox --output-format text
 
-Capture the full output.
+Capture the full output. If the command fails (non-zero exit, command not found, timeout), print the error and stop the loop — do not crash.
 
-#### 4c. Present findings
+#### 3c. Present findings
 
-Print a header: "## Round N/M — Review by <agent>"
+Print a header: "## Round N/M — Review by <model>"
 
 Print the raw findings from the agent. Do not soften, filter, or editorialize.
 
 If the agent returned no findings or explicitly said no issues were found, print "No issues found — review complete." and stop the loop early.
 
-#### 4d. Fix the findings
+#### 3d. Fix the findings
 
 Go through each finding from the review and fix it:
 
@@ -102,11 +95,11 @@ After fixing, print a brief summary of what was fixed and what was skipped (with
 
 Keep a running log of all fixes made across rounds to feed into the next round's prompt.
 
-#### 4e. End of round
+#### 3e. End of round
 
 After fixing, if there are more rounds remaining, print: "Proceeding to round N+1..."
 
-### 5. Final summary
+### 4. Final summary
 
 After all rounds complete (or after early exit), print:
 

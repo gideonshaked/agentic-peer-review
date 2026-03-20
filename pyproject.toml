@@ -1,0 +1,13 @@
+[project]
+name = "agent-peer-review"
+version = "1.0.0"
+description = "Iterative peer review using external AI agents with automatic fix cycles"
+requires-python = ">=3.10"
+dependencies = ["jinja2"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["scripts"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

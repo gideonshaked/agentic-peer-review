@@ -1,24 +1,24 @@
 ---
 description: "Iterative peer review using an external AI agent (claude, codex, or gemini) with automatic fix cycles. Runs N rounds of: external agent audits -> Claude fixes -> repeat."
-argument-hint: "[--model claude|codex|gemini] [--max-rounds N] [focus area or file path]"
-allowed-tools: ["Bash(${CLAUDE_PLUGIN_ROOT}/scripts:*)"]
+argument-hint: "[--agent claude|codex|gemini] [--max-rounds N] [\"review instructions\"]"
+allowed-tools: ["Bash(python3:*)", "Bash(uv:*)", "Bash(echo:*)", "Bash(git:*)", "Read", "Edit", "Glob", "Grep"]
 ---
 
 # /peer-review - Iterative AI peer review with fix cycles
 
 Runs an external AI agent to audit the codebase, then fixes the findings in the current session. Repeats for the specified number of rounds.
 
-Usage: /peer-review [--model claude|codex|gemini] [--max-rounds N] [focus area or file path]
+Usage: /peer-review [--agent claude|codex|gemini] [--max-rounds N] ["message"]
 
-- --model: which AI agent CLI to use for review (default: claude)
+- --agent: which AI agent CLI to use for review (default: claude)
 - --max-rounds: number of review-fix cycles, 1-10 (default: 5)
-- focus: optional file path or topic (e.g. "error handling", "src/api.py")
+- message: optional quoted string with review instructions — what to focus on, what to skip, etc.
 
 Examples:
   /peer-review
-  /peer-review --model codex --max-rounds 3
-  /peer-review --model claude --max-rounds 2 src/auth/
-  /peer-review --model gemini --max-rounds 1 error handling
+  /peer-review --agent codex --max-rounds 3
+  /peer-review --agent claude --max-rounds 2 "Check the auth module for SQL injection vulnerabilities, do not check for tech debt"
+  /peer-review --agent gemini --max-rounds 1 "Focus on error handling in src/api/"
 
 ## Instructions
 
@@ -26,19 +26,19 @@ Examples:
 
 Run the argument parser:
 
-  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/parse_args.py" $ARGUMENTS
+  uv run --directory "${CLAUDE_PLUGIN_ROOT}" python -m scripts.parse_args $ARGUMENTS
 
 This returns a JSON object. If the "error" field is true, print the "message" to the user and stop — do not proceed with the review loop.
 
-Otherwise, extract "model", "max_rounds", and "focus" from the JSON output.
+Otherwise, extract "agent", "max_rounds", and "message" from the JSON output. Print the "status" field from the result.
 
 ### 2. Gather project context
 
-Run these commands to understand the project:
-- git status to see current state
-- git diff --stat HEAD to see recent changes
-- Check for common project files (package.json, Cargo.toml, pyproject.toml, go.mod, etc.)
-- Note the current working directory and primary language
+Run the project detection script:
+
+  uv run --directory "${CLAUDE_PLUGIN_ROOT}" python -m scripts.detect_project
+
+This returns a JSON object with "language", "framework", "working_dir", and "git_status". Use the language and framework values when building the audit prompt.
 
 ### 3. Run the review-fix loop
 
@@ -46,36 +46,32 @@ For each round (1 through max_rounds):
 
 #### 3a. Build the audit prompt
 
-Start with this base prompt:
+Build a JSON object and pipe it to the render script. The fields are:
 
-"You are a senior code reviewer performing a thorough audit. Examine this codebase for bugs, logic errors, dead code, security vulnerabilities, tech debt, and architectural issues. For each finding, report: 1) File path 2) Line number or range 3) Severity: critical, high, medium, or low 4) Category: bug, security, dead-code, tech-debt, architecture, or performance 5) A clear explanation of the problem and why it matters. Format findings as a numbered list. Only report genuine issues — no style nits or subjective preferences."
+- "language", "framework", "working_dir": from the step 2 detection result
+- "message": from the step 1 parsed arguments
+- "round_num": current round (1-indexed)
+- "total_rounds": total number of rounds
+- "prior_fixes": summary of fixes from prior rounds ("" if round 1)
+- "skipped_findings": summary of skipped findings from prior rounds ("" if round 1)
 
-Then append context:
-- Add the project language, framework, and working directory
-- If this is round 2+, add: "Previous rounds already fixed some issues. Focus on finding NEW problems, not issues that were already addressed. Here is a summary of what was fixed in prior rounds:" followed by the summary from prior rounds.
-- If a focus area was specified:
-  - If it looks like a file path (contains / or .), add: "Focus your audit on: <path>"
-  - Otherwise, add: "Focus on this category: <topic>"
-- If no focus area, add: "Do a broad sweep of the entire codebase."
+  echo '{ ... }' | uv run --directory "${CLAUDE_PLUGIN_ROOT}" python -m scripts.render_prompt
 
 #### 3b. Execute the review agent
 
-Run the appropriate CLI command based on the chosen model. Write the full prompt to a temporary file first to avoid shell quoting issues, then pass it via stdin or file reference.
+Pipe the rendered prompt directly into the run_review script, passing the agent name as an argument. The script handles CLI differences, timeouts (5 min), and error reporting internally.
 
-For codex:
-  codex exec -s read-only "<full_prompt>"
+  echo '{ ... }' | uv run --directory "${CLAUDE_PLUGIN_ROOT}" python -m scripts.render_prompt | uv run --directory "${CLAUDE_PLUGIN_ROOT}" python -m scripts.run_review <agent>
 
-For claude:
-  claude -p --allowedTools "Read Glob Grep" "<full_prompt>"
+Or as two steps if you already have the rendered prompt saved from step 4a:
 
-For gemini:
-  gemini -p "<full_prompt>" --sandbox --output-format text
+  echo "<rendered_prompt>" | uv run --directory "${CLAUDE_PLUGIN_ROOT}" python -m scripts.run_review <agent>
 
-Capture the full output. If the command fails (non-zero exit, command not found, timeout), print the error and stop the loop — do not crash.
+If the command fails (non-zero exit), print the error and stop the loop — do not crash.
 
 #### 3c. Present findings
 
-Print a header: "## Round N/M — Review by <model>"
+Print a header: "## Round N/M — Review by <agent>"
 
 Print the raw findings from the agent. Do not soften, filter, or editorialize.
 
@@ -93,7 +89,7 @@ Go through each finding from the review and fix it:
 
 After fixing, print a brief summary of what was fixed and what was skipped (with reasons for skipping).
 
-Keep a running log of all fixes made across rounds to feed into the next round's prompt.
+Keep a running log of all fixes made AND all findings intentionally skipped (with reasons) across rounds to feed into the next round's prompt. This prevents the reviewer from re-reporting known skipped issues.
 
 #### 3e. End of round
 

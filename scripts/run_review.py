@@ -11,7 +11,7 @@ import sys
 AGENT_COMMANDS = {
     "claude": ["claude", "-p", "--allowedTools", "Read Glob Grep"],
     "codex": ["codex", "exec", "-s", "read-only", "-"],
-    "gemini": ["gemini", "--sandbox", "--output-format", "text", "-p", ""],
+    "gemini": ["gemini", "--sandbox", "--output-format", "text", "-p"],
 }
 
 TIMEOUT_SECONDS = 300
@@ -34,10 +34,17 @@ def main():
 
     cmd = list(AGENT_COMMANDS[agent])
 
+    # gemini takes the prompt as the -p value; claude/codex read from stdin
+    if agent == "gemini":
+        cmd.append(prompt)
+        stdin_data = None
+    else:
+        stdin_data = prompt
+
     try:
         result = subprocess.run(
             cmd,
-            input=prompt,
+            input=stdin_data,
             capture_output=True,
             text=True,
             encoding="utf-8",
@@ -50,11 +57,12 @@ def main():
         print(f"Error: {agent} timed out after {TIMEOUT_SECONDS}s", file=sys.stderr)
         sys.exit(1)
 
+    err = result.stderr.strip()
+    if err:
+        print(err, file=sys.stderr)
+
     if result.returncode != 0:
-        err = result.stderr.strip()
         print(f"Error: {agent} exited with code {result.returncode}", file=sys.stderr)
-        if err:
-            print(err, file=sys.stderr)
         sys.exit(result.returncode)
 
     output = result.stdout.strip()

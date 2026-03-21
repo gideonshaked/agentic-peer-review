@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Detect project language, framework, and context."""
+import glob
 import json
 import os
 import subprocess
@@ -35,6 +36,13 @@ FRAMEWORK_HINTS = {
         "angular": "Angular",
         "express": "Express",
     },
+    "JavaScript": {
+        "react": "React",
+        "next": "Next.js",
+        "vue": "Vue",
+        "angular": "Angular",
+        "express": "Express",
+    },
     "Ruby": {
         "rails": "Rails",
         "sinatra": "Sinatra",
@@ -47,8 +55,8 @@ def detect_language(working_dir):
     language = ""
     framework = ""
 
-    for filename, lang, fw in PROJECT_SIGNATURES:
-        if os.path.exists(os.path.join(working_dir, filename)):
+    for pattern, lang, fw in PROJECT_SIGNATURES:
+        if glob.glob(os.path.join(working_dir, pattern)):
             language = lang
             framework = fw
             break
@@ -56,14 +64,7 @@ def detect_language(working_dir):
     if not language:
         return language, framework
 
-    # Refine: check if TypeScript project has tsconfig
-    if language == "TypeScript" or (
-        language == "TypeScript"
-        and os.path.exists(os.path.join(working_dir, "tsconfig.json"))
-    ):
-        language = "TypeScript"
-
-    # Check for JavaScript-only (no tsconfig)
+    # package.json defaults to TypeScript; downgrade to JavaScript if no tsconfig
     if language == "TypeScript" and not os.path.exists(
         os.path.join(working_dir, "tsconfig.json")
     ):
@@ -77,11 +78,16 @@ def detect_language(working_dir):
             for f in ("pyproject.toml", "requirements.txt"):
                 path = os.path.join(working_dir, f)
                 if os.path.exists(path):
-                    with open(path) as fh:
+                    with open(path, encoding="utf-8", errors="replace") as fh:
                         dep_content = fh.read().lower()
                     break
         elif language in ("TypeScript", "JavaScript"):
             path = os.path.join(working_dir, "package.json")
+            if os.path.exists(path):
+                with open(path) as fh:
+                    dep_content = fh.read().lower()
+        elif language == "Ruby":
+            path = os.path.join(working_dir, "Gemfile")
             if os.path.exists(path):
                 with open(path) as fh:
                     dep_content = fh.read().lower()

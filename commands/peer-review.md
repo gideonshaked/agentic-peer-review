@@ -1,7 +1,7 @@
 ---
 description: "Iterative peer review using an external AI agent (claude, codex, or gemini) with automatic fix cycles. Runs N rounds of: external agent audits -> Claude fixes -> repeat."
 argument-hint: "[--agent claude|codex|gemini] [--max-rounds N] [\"review instructions\"]"
-allowed-tools: ["Bash(python3:*)", "Bash(uv:*)", "Bash(echo:*)", "Bash(git:*)", "Read", "Edit", "Glob", "Grep"]
+allowed-tools: ["Bash(uv:*)", "Bash(echo:*)", "Bash(git:*)", "Read", "Edit", "Glob", "Grep"]
 ---
 
 # /peer-review - Iterative AI peer review with fix cycles

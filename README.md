@@ -4,11 +4,25 @@ A Claude Code plugin that runs iterative peer review using external AI agents. I
 
 ## Install
 
+From GitHub via HTTPS:
+
+```
+claude plugin add https://github.com/gideonshaked/agent-peer-review.git
+```
+
+From GitHub via SSH:
+
+```
+claude plugin add git@github.com:gideonshaked/agent-peer-review.git
+```
+
+From a local directory:
+
 ```
 claude plugin add /path/to/agent-peer-review
 ```
 
-Or during development:
+During development:
 
 ```
 claude --plugin-dir /path/to/agent-peer-review

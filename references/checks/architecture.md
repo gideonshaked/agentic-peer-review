@@ -1,0 +1,1 @@
+Look for separation of concerns violations, tight coupling between modules, layering violations, circular dependencies, misplaced responsibilities, and inconsistent patterns across similar components.

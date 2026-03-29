@@ -1,0 +1,1 @@
+Look for injection vulnerabilities (SQL, command, XSS), authentication and authorization flaws, secrets or credentials in code, insecure defaults, missing input validation, and unsafe deserialization.

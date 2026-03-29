@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Argument parser for the agent-peer-review plugin."""
+"""Argument parser for the agentic-peer-review plugin."""
 import argparse
 import json
 import shutil
@@ -25,6 +25,28 @@ def main():
         help="Number of review-fix cycles, 1-10 (default: 5)",
     )
     parser.add_argument(
+        "--focus",
+        default="",
+        help="Narrow review scope to a specific file or directory path",
+    )
+    parser.add_argument(
+        "--timeout",
+        type=int,
+        default=300,
+        help="Timeout in seconds for each review agent invocation (default: 300)",
+    )
+    parser.add_argument(
+        "--worktree",
+        action="store_true",
+        default=False,
+        help="Run fixes in a git worktree; show diff at end and ask to merge or discard",
+    )
+    parser.add_argument(
+        "--log",
+        default="",
+        help="Write findings and fix/skip decisions to the specified file",
+    )
+    parser.add_argument(
         "message",
         nargs="?",
         default="",
@@ -37,6 +59,14 @@ def main():
         result = {
             "error": True,
             "message": f"Invalid arguments: {e}",
+        }
+        print(json.dumps(result))
+        sys.exit(0)
+
+    if args.timeout < 1:
+        result = {
+            "error": True,
+            "message": "--timeout must be a positive integer",
         }
         print(json.dumps(result))
         sys.exit(0)
@@ -64,12 +94,26 @@ def main():
             sys.exit(0)  # exit 0 so Claude can read the error message
 
     msg_display = f'"{args.message}"' if args.message else "none"
+    focus_display = f'"{args.focus}"' if args.focus else "none"
+    flags = []
+    if args.worktree:
+        flags.append("worktree")
+    if args.log:
+        flags.append(f"log={args.log}")
+    if args.timeout != 300:
+        flags.append(f"timeout={args.timeout}s")
+    flags_display = ", ".join(flags) if flags else "none"
+
     result = {
         "error": False,
         "agent": args.agent,
         "max_rounds": args.max_rounds,
         "message": args.message,
-        "status": f"**Agent:** {args.agent} | **Max rounds:** {args.max_rounds} | **Message:** {msg_display}",
+        "focus": args.focus,
+        "timeout": args.timeout,
+        "worktree": args.worktree,
+        "log": args.log,
+        "status": f"**Agent:** {args.agent} | **Max rounds:** {args.max_rounds} | **Focus:** {focus_display} | **Message:** {msg_display} | **Flags:** {flags_display}",
     }
     print(json.dumps(result))
 

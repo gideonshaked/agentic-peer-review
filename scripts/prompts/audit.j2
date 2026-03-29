@@ -25,6 +25,11 @@ The following findings were reviewed and intentionally skipped (do not re-report
 {{ skipped_findings }}
 </data>
 {% endif %}
+{% if focus %}
+
+Focus your audit on: {{ focus }}
+Only report findings within this scope. Ignore files and directories outside it.
+{% endif %}
 {% if message %}
 
 User instructions (these take priority — if they ask to skip categories, exclude them; if they narrow focus, follow that):

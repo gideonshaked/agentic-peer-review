@@ -12,8 +12,9 @@ A Claude Code plugin that provides `/peer-review` — an iterative code review c
 uv sync                        # install dependencies
 uv run python -m scripts.parse_args --help   # test argument parser
 uv run python -m scripts.detect_project      # test project detection
-echo '{"language":"Python","working_dir":"/tmp","message":"","round_num":1,"total_rounds":1,"prior_fixes":"","skipped_findings":""}' | uv run python -m scripts.render_prompt   # test prompt rendering
-echo "hello" | uv run python -m scripts.run_review claude   # test agent invocation
+echo '{"language":"Python","working_dir":"/tmp","message":"","focus":"","round_num":1,"total_rounds":1,"prior_fixes":"","skipped_findings":""}' | uv run python -m scripts.render_prompt   # test prompt rendering
+echo "hello" | uv run python -m scripts.run_review claude           # test agent invocation (default timeout)
+echo "hello" | uv run python -m scripts.run_review claude 60        # test with 60s timeout
 ```
 
 ## Architecture
@@ -22,10 +23,10 @@ The plugin follows a strict separation: the skill definition (`commands/peer-rev
 
 **Data flow:** `parse_args` → `detect_project` → loop[ `render_prompt` → `run_review` → Claude fixes ] → summary
 
-- `scripts/parse_args.py` — CLI argument parsing. Returns JSON with `agent`, `max_rounds`, `message`, and a pre-formatted `status` line. Errors also return JSON (exit 0) so Claude can read them.
+- `scripts/parse_args.py` — CLI argument parsing. Returns JSON with `agent`, `max_rounds`, `message`, `focus`, `timeout`, `worktree`, `log`, and a pre-formatted `status` line. Errors also return JSON (exit 0) so Claude can read them.
 - `scripts/detect_project.py` — Scans for project files (pyproject.toml, package.json, etc.) to determine language and framework. Returns JSON.
 - `scripts/render_prompt.py` — Reads JSON from stdin, renders `scripts/prompts/audit.j2` via Jinja2. The template directs the review agent to also check `~/.claude/CLAUDE.md` for user conventions.
-- `scripts/run_review.py` — Takes agent name as arg, reads prompt from stdin, invokes the correct CLI (handling syntax differences between claude/codex/gemini), enforces 5-min timeout. Claude and Codex receive the prompt via stdin; Gemini receives it as the `-p` argument value.
+- `scripts/run_review.py` — Takes agent name and optional timeout as args, reads prompt from stdin, invokes the correct CLI (handling syntax differences between claude/codex/gemini). Claude and Codex receive the prompt via stdin; Gemini receives it as the `-p` argument value.
 - `commands/peer-review.md` — Skill definition. Orchestrates the loop, presents findings, and decides which to fix. Must not contain deterministic logic — move it to scripts.
 
 ## Key Conventions

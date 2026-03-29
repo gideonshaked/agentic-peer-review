@@ -1,5 +1,5 @@
 [project]
-name = "agent-peer-review"
+name = "agentic-peer-review"
 version = "1.0.0"
 description = "Iterative peer review using external AI agents with automatic fix cycles"
 requires-python = ">=3.10"

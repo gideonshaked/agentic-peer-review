@@ -14,18 +14,19 @@ AGENT_COMMANDS = {
     "gemini": ["gemini", "--sandbox", "--output-format", "text", "-p"],
 }
 
-TIMEOUT_SECONDS = 300
+DEFAULT_TIMEOUT = 300
 
 
 def main():
-    if len(sys.argv) != 2 or sys.argv[1] not in AGENT_COMMANDS:
+    if len(sys.argv) < 2 or sys.argv[1] not in AGENT_COMMANDS:
         print(
-            f"Usage: {sys.argv[0]} <claude|codex|gemini>  (reads prompt from stdin)",
+            f"Usage: {sys.argv[0]} <claude|codex|gemini> [timeout_seconds]  (reads prompt from stdin)",
             file=sys.stderr,
         )
         sys.exit(1)
 
     agent = sys.argv[1]
+    timeout = int(sys.argv[2]) if len(sys.argv) > 2 else DEFAULT_TIMEOUT
     prompt = sys.stdin.read()
 
     if not prompt.strip():
@@ -48,13 +49,13 @@ def main():
             capture_output=True,
             text=True,
             encoding="utf-8",
-            timeout=TIMEOUT_SECONDS,
+            timeout=timeout,
         )
     except FileNotFoundError:
         print(f"Error: {agent} CLI not found", file=sys.stderr)
         sys.exit(1)
     except subprocess.TimeoutExpired:
-        print(f"Error: {agent} timed out after {TIMEOUT_SECONDS}s", file=sys.stderr)
+        print(f"Error: {agent} timed out after {timeout}s", file=sys.stderr)
         sys.exit(1)
 
     err = result.stderr.strip()

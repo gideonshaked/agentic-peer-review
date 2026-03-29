@@ -1,5 +1,5 @@
 {
-  "name": "agent-peer-review",
+  "name": "agentic-peer-review",
   "description": "Iterative peer review using external AI agents (Claude, Codex, or Gemini CLI) with automatic fix cycles",
   "version": "1.0.0",
   "author": {

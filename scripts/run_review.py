@@ -26,7 +26,11 @@ def main():
         sys.exit(1)
 
     agent = sys.argv[1]
-    timeout = int(sys.argv[2]) if len(sys.argv) > 2 else DEFAULT_TIMEOUT
+    try:
+        timeout = int(sys.argv[2]) if len(sys.argv) > 2 else DEFAULT_TIMEOUT
+    except ValueError:
+        print(f"Error: invalid timeout value: {sys.argv[2]}", file=sys.stderr)
+        sys.exit(1)
     prompt = sys.stdin.read()
 
     if not prompt.strip():

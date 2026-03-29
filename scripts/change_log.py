@@ -9,6 +9,7 @@ Subcommands:
 """
 import json
 import os
+import subprocess
 import sys
 from datetime import datetime, timezone
 
@@ -20,25 +21,37 @@ def _log_path():
 
 
 def cmd_init():
-    """Create a new change log. Reads metadata JSON from stdin."""
+    """Create a new change log. Reads metadata JSON from stdin. Also captures base commit."""
     meta = json.load(sys.stdin)
     path = _log_path()
+
+    # Capture base commit SHA
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            capture_output=True, text=True, encoding="utf-8", timeout=10,
+        )
+        base_commit = result.stdout.strip() if result.returncode == 0 else ""
+    except Exception:
+        base_commit = ""
+
     data = {
         "meta": {
             "agent": meta.get("agent", ""),
             "max_rounds": meta.get("max_rounds", 0),
             "focus": meta.get("focus", ""),
-            "message": meta.get("message", ""),
+            "instructions": meta.get("instructions", ""),
             "worktree": meta.get("worktree", False),
             "started_at": datetime.now(timezone.utc).isoformat(),
             "completed_at": "",
+            "base_commit": base_commit,
             "project": meta.get("project", {}),
         },
         "rounds": [],
     }
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f)
-    print(json.dumps({"log_file": path}))
+    print(json.dumps({"log_file": path, "base_commit": base_commit}))
 
 
 def cmd_add_round(log_file):

@@ -4,7 +4,6 @@ import glob
 import json
 import os
 import subprocess
-import sys
 
 # Map project files to (language, framework) pairs.
 # First match wins, so order by specificity.
@@ -84,12 +83,12 @@ def detect_language(working_dir):
         elif language in ("TypeScript", "JavaScript"):
             path = os.path.join(working_dir, "package.json")
             if os.path.exists(path):
-                with open(path) as fh:
+                with open(path, encoding="utf-8", errors="replace") as fh:
                     dep_content = fh.read().lower()
         elif language == "Ruby":
             path = os.path.join(working_dir, "Gemfile")
             if os.path.exists(path):
-                with open(path) as fh:
+                with open(path, encoding="utf-8", errors="replace") as fh:
                     dep_content = fh.read().lower()
 
         for key, fw_name in hints.items():

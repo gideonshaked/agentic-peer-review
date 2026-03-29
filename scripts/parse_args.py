@@ -5,6 +5,8 @@ import json
 import shutil
 import sys
 
+from scripts.list_checks import get_available_checks
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -47,10 +49,15 @@ def main():
         help="Write findings and fix/skip decisions to the specified file",
     )
     parser.add_argument(
-        "message",
+        "--only",
+        default="",
+        help="Comma-separated list of checks to run (default: all)",
+    )
+    parser.add_argument(
+        "instructions",
         nargs="?",
         default="",
-        help="Optional review instructions (e.g. \"Check auth for SQL injection, skip tech debt\")",
+        help="Optional review instructions",
     )
 
     try:
@@ -91,29 +98,35 @@ def main():
                 "message": f"{args.agent} CLI not found. {install_hints.get(args.agent, '')}",
             }
             print(json.dumps(result))
-            sys.exit(0)  # exit 0 so Claude can read the error message
+            sys.exit(0)
 
-    msg_display = f'"{args.message}"' if args.message else "none"
-    focus_display = f'"{args.focus}"' if args.focus else "none"
-    flags = []
-    if args.worktree:
-        flags.append("worktree")
-    if args.log:
-        flags.append(f"log={args.log}")
-    if args.timeout != 300:
-        flags.append(f"timeout={args.timeout}s")
-    flags_display = ", ".join(flags) if flags else "none"
+    # Resolve checks
+    all_checks = get_available_checks()
+    if args.only:
+        requested = [c.strip() for c in args.only.split(",")]
+        invalid = [c for c in requested if c not in all_checks]
+        if invalid:
+            result = {
+                "error": True,
+                "message": f"Unknown check(s): {', '.join(invalid)}. Available: {', '.join(all_checks)}",
+            }
+            print(json.dumps(result))
+            sys.exit(0)
+        active_checks = requested
+    else:
+        active_checks = all_checks
 
     result = {
         "error": False,
         "agent": args.agent,
         "max_rounds": args.max_rounds,
-        "message": args.message,
+        "instructions": args.instructions,
         "focus": args.focus,
         "timeout": args.timeout,
         "worktree": args.worktree,
         "log": args.log,
-        "status": f"**Agent:** {args.agent} | **Max rounds:** {args.max_rounds} | **Focus:** {focus_display} | **Message:** {msg_display} | **Flags:** {flags_display}",
+        "checks": active_checks,
+        "all_checks": all_checks,
     }
     print(json.dumps(result))
 

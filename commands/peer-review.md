@@ -1,6 +1,6 @@
 ---
 name: peer-review
-description: "Iterative AI peer review with automatic fix cycles. TRIGGER when: user asks for a code review, second opinion, or audit; user says 'review this', 'check my code', 'peer review'; after completing a large feature or refactor."
+description: "Iterative AI peer review with automatic that finds and fixes issues. TRIGGER when: user asks for a code review, second opinion, or audit; user says 'review this', 'check my code', 'peer review'; after completing a large feature or refactor."
 argument-hint: "[--agent claude|codex|gemini] [--max-rounds N] [--focus <path>] [--only <checks>] [--timeout <seconds>] [--worktree] [--log <file>] [\"instructions\"]"
 allowed-tools:
   - "Bash(uv:*)"
@@ -15,16 +15,16 @@ allowed-tools:
 effort: high
 ---
 
-# /peer-review - Iterative AI peer review with fix cycles
+# /peer-review - Iterative AI peer review with that finds and fixes issues
 
 Runs an external AI agent to audit the codebase, then fixes the findings in the current session. Repeats for the specified number of rounds.
 
 Usage: /peer-review [--agent claude|codex|gemini] [--max-rounds N] [--focus path] [--only checks] [--timeout seconds] [--worktree] [--log file] ["instructions"]
 
 - --agent: which AI agent CLI to use for review (default: claude)
-- --max-rounds: number of review-fix cycles, 1-10 (default: 5)
+- --max-rounds: maximum review-that finds and fixes issues (default: 5). Stops early if no issues found.
 - --focus: narrow the review to a specific file or directory
-- --only: comma-separated list of checks to run (default: all)
+- --only: comma-separated list of checks to run (default: all). Available: architecture, bugs, dead-code, performance, security, tech-debt
 - --timeout: timeout in seconds for each agent invocation (default: 300)
 - --worktree: run all fixes in a git worktree; show diff at end and ask to merge or discard
 - --log: write findings and fix/skip decisions to the specified markdown file

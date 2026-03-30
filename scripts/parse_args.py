@@ -11,7 +11,7 @@ from scripts.list_checks import get_available_checks
 def main():
     parser = argparse.ArgumentParser(
         prog="peer-review",
-        description="Iterative AI peer review with fix cycles",
+        description="Iterative AI peer review that finds and fixes issues",
         exit_on_error=False,
     )
     parser.add_argument(
@@ -24,7 +24,7 @@ def main():
         "--max-rounds",
         type=int,
         default=5,
-        help="Number of review-fix cycles, 1-10 (default: 5)",
+        help="Maximum review-fix cycles (default: 5). Stops early if no issues found.",
     )
     parser.add_argument(
         "--focus",
@@ -48,10 +48,11 @@ def main():
         default="",
         help="Write findings and fix/skip decisions to the specified file",
     )
+    all_checks = get_available_checks()
     parser.add_argument(
         "--only",
         default="",
-        help="Comma-separated list of checks to run (default: all)",
+        help=f"Comma-separated list of checks to run (default: all). Available: {', '.join(all_checks)}",
     )
     parser.add_argument(
         "instructions",
@@ -78,10 +79,10 @@ def main():
         print(json.dumps(result))
         sys.exit(0)
 
-    if not 1 <= args.max_rounds <= 10:
+    if args.max_rounds < 1:
         result = {
             "error": True,
-            "message": "--max-rounds must be between 1 and 10",
+            "message": "--max-rounds must be at least 1",
         }
         print(json.dumps(result))
         sys.exit(0)
@@ -100,8 +101,7 @@ def main():
             print(json.dumps(result))
             sys.exit(0)
 
-    # Resolve checks
-    all_checks = get_available_checks()
+    # Resolve checks (all_checks already set above for --help text)
     if args.only:
         requested = [c.strip() for c in args.only.split(",")]
         invalid = [c for c in requested if c not in all_checks]

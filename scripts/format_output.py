@@ -61,7 +61,7 @@ def cmd_settings(json_str):
 
     rows = [
         f"Agent:        {data.get('agent', '')}",
-        f"Rounds:       {data.get('max_rounds', '')}",
+        f"Max rounds:   {data.get('max_rounds', '')}",
         f"Focus:        {data.get('focus') or 'entire codebase'}",
         f"Timeout:      {data.get('timeout', 300)}s",
         f"Worktree:     {'yes' if data.get('worktree') else 'no'}",

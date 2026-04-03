@@ -7,19 +7,17 @@ A Claude Code plugin that peer-reviews your code with AI agents. `agentic-peer-r
 Open Claude Code and paste the following:
 
 ```
-┌─ Claude Code ───────────────────────────────────────────────────┐
-│  > /plugin marketplace add gideonshaked/agentic-peer-review     │
-│  > /plugin install agentic-peer-review@agentic-peer-review      │
-│  > /peer-review                                                 │
-└─────────────────────────────────────────────────────────────────┘
+/plugin marketplace add gideonshaked/agentic-peer-review@v1.0.0
 ```
 
-Then run peer review on the current claude workspace:
+```
+/plugin install agentic-peer-review@agentic-peer-review
+```
+
+Then run peer review on the current workspace:
 
 ```
-┌─ Claude Code ───────┐
-│  > /peer-review     │
-└─────────────────────┘
+/peer-review
 ```
 
 <p align="center">
@@ -35,6 +33,25 @@ Then run peer review on the current claude workspace:
 From the terminal:
 
 ```bash
+claude plugin marketplace add gideonshaked/agentic-peer-review@v1.0.0
+claude plugin install agentic-peer-review@agentic-peer-review
+```
+
+Or from inside Claude Code:
+
+```
+/plugin marketplace add gideonshaked/agentic-peer-review@v1.0.0
+```
+
+```
+/plugin install agentic-peer-review@agentic-peer-review
+```
+
+### Install from latest commit
+
+From the terminal:
+
+```bash
 claude plugin marketplace add gideonshaked/agentic-peer-review
 claude plugin install agentic-peer-review@agentic-peer-review
 ```
@@ -42,15 +59,14 @@ claude plugin install agentic-peer-review@agentic-peer-review
 Or from inside Claude Code:
 
 ```
-┌─ Claude Code ───────────────────────────────────────────────────┐
-│  > /plugin marketplace add gideonshaked/agentic-peer-review     │
-│  > /plugin install agentic-peer-review@agentic-peer-review      │
-└─────────────────────────────────────────────────────────────────┘
+/plugin marketplace add gideonshaked/agentic-peer-review
+```
+
+```
+/plugin install agentic-peer-review@agentic-peer-review
 ```
 
 ### Updating
-
-From the terminal:
 
 From the terminal:
 
@@ -62,63 +78,64 @@ claude plugin update agentic-peer-review@agentic-peer-review
 Or from inside Claude Code:
 
 ```
-┌─ Claude Code ─────────────────────────────────────────┐
-│  > /plugin marketplace update agentic-peer-review     │
-└───────────────────────────────────────────────────────┘
+/plugin marketplace update agentic-peer-review
 ```
 
 Then open `/plugin`, go to the **Installed** tab, and update the plugin from there.
 
 ### Requirements
 
-- [Claude Code](https://claude.ai/code)
-- [uv](https://docs.astral.sh/uv/)
-- [Codex](https://github.com/openai/codex) (only required for using OpenAI Codex as a reviewer agent)
+- [Claude Code](https://code.claude.com/docs/en/quickstart)
+- [uv](https://docs.astral.sh/uv/#installation)
+- [Codex CLI](https://github.com/openai/codex) (only required for using OpenAI Codex as a reviewer agent)
 - [Gemini CLI](https://github.com/google-gemini/gemini-cli) (only required for using Google Gemini as a reviewer agent)
 
 ## Usage
 
-### Help output
+### Help
+
+To see all available options, in Claude Code run:
 
 ```
-┌─ Claude Code ───────────────────────────────────────────────────────────────────────┐
-│  > /peer-review -h                                                                  │
-│                                                                                     │
-│  usage: peer-review [-h] [--agent {claude,codex,gemini}]                            │
-│                     [--max-rounds MAX_ROUNDS] [--focus FOCUS]                       │
-│                     [--timeout TIMEOUT] [--worktree] [--log LOG] [--only ONLY]      │
-│                     [instructions]                                                  │
-│                                                                                     │
-│  Iterative AI peer review that finds and fixes issues in your codebase              │
-│                                                                                     │
-│  positional arguments:                                                              │
-│    instructions          Optional review instructions                               │
-│                                                                                     │
-│  options:                                                                           │
-│    -h, --help            show this help message and exit                            │
-│    --agent {claude,codex,gemini}                                                    │
-│                          AI agent to use for review (default: claude)               │
-│    --max-rounds MAX_ROUNDS                                                          │
-│                          Maximum review-fix cycles (default: 5). Stops early if     │
-│                          no issues found.                                           │
-│    --focus FOCUS         Narrow review scope to a specific file or directory        │
-│                          path                                                       │
-│    --timeout TIMEOUT     Timeout in seconds for each review agent invocation        │
-│                          (default: 300)                                             │
-│    --worktree            Run fixes in a git worktree; show diff at end and ask      │
-│                          to merge or discard                                        │
-│    --log LOG             Write findings and fix/skip decisions to the specified     │
-│                          file                                                       │
-│    --only ONLY           Comma-separated list of checks to run (default: all).      │
-│                          Available: architecture, bugs, dead-code, performance,     │
-│                          security, tech-debt                                        │
-└─────────────────────────────────────────────────────────────────────────────────────┘
+/peer-review -h
+```
+
+```
+usage: peer-review [-h] [--agent {claude,codex,gemini}]                                                                                
+                   [--max-rounds MAX_ROUNDS] [--focus FOCUS]                                                                           
+                   [--timeout TIMEOUT] [--worktree] [--log LOG] [--only ONLY]                                                          
+                   [instructions]                                                                                                      
+                                                                                                                                         
+  Iterative AI peer review that finds and fixes issues in your codebase                                                                  
+                                                                                                                                         
+  positional arguments:                                                                                                               
+    instructions          Optional review instructions
+
+  options:
+    -h, --help            show this help message and exit
+    --agent {claude,codex,gemini}                                                                                                        
+                          AI agent to use for review (default: claude)                                                                   
+    --max-rounds MAX_ROUNDS                                                                                                              
+                          Maximum review-fix cycles (default: 5). Stops early if                                                         
+                          no issues found.                                                                                               
+    --focus FOCUS         Narrow review scope to a specific file or directory                                                            
+                          path                                                                                                           
+    --timeout TIMEOUT     Timeout in seconds for each review agent invocation                                                            
+                          (default: 300)                                                                                                 
+    --worktree            Run fixes in a git worktree; show diff at end and ask                                                          
+                          to merge or discard                                                                                            
+    --log LOG             Write findings and fix/skip decisions to the specified                                                         
+                          file                                                                                                           
+    --only ONLY           Comma-separated list of checks to run (default: all).                                                          
+                          Available: architecture, bugs, dead-code, performance,                                                         
+                          security, tech-debt
 ```
 
 ### Options
 
 | Flag | Description |
 |------|-------------|
+| `-h`, `--help` | Show help message and exit |
 | `--agent` | Review agent: `claude` (default), `codex`, or `gemini` |
 | `--max-rounds` | Maximum review-that finds and fixes issues (default: 5). Stops early if no issues found. |
 | `--focus <file or dir>` | Narrow the review to a specific file or directory |

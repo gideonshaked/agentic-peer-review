@@ -1,7 +1,8 @@
 {
   "name": "agentic-peer-review",
   "owner": {
-    "name": "Gideon Shaked"
+    "name": "Gideon Shaked",
+    "email": "gideonshaked@gmail.com"
   },
   "metadata": {
     "description": "Iterative AI peer review that finds and fixes issues in your codebase"
@@ -10,16 +11,7 @@
     {
       "name": "agentic-peer-review",
       "source": "./",
-      "description": "Iterative AI peer review that finds and fixes issues in your codebase using external agents (Claude, Codex, or Gemini CLI)",
-      "version": "1.0.0",
-      "author": {
-        "name": "Gideon Shaked"
-      },
-      "homepage": "https://github.com/gideonshaked/agentic-peer-review",
-      "repository": "https://github.com/gideonshaked/agentic-peer-review",
-      "license": "MIT",
-      "keywords": ["code-review", "peer-review", "ai-agents", "iterative", "claude", "codex", "gemini", "multi-agent"],
-      "category": "code-quality"
+      "version": "1.0.0"
     }
   ]
 }

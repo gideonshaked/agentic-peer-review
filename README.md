@@ -37,9 +37,18 @@ Or from inside Claude Code:
 
 ### Updating
 
+From the terminal:
+
 ```bash
 claude plugin marketplace update agentic-peer-review
 claude plugin update agentic-peer-review@agentic-peer-review
+```
+
+Or from inside Claude Code:
+
+```bash
+/plugin marketplace update agentic-peer-review
+/plugin update agentic-peer-review@agentic-peer-review
 ```
 
 ### Requirements

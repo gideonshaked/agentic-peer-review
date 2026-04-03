@@ -1,4 +1,4 @@
-<h1 align="center">agentic-peer-review</h1>
+<h1 align="center"><code>agentic-peer-review</code></h1>
 
 A Claude Code plugin that peer-reviews your code with AI agents.
 Spawns an AI code reviewer (Claude, Codex, or Gemini), implements the recommended fixes,

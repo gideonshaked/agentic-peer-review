@@ -6,7 +6,7 @@ and repeats until the reviewer is satisfied with the codebase.
 
 <h3 align="center">Quickstart</h3>
 
-<p align="center">Open Claude Code and paste the following:</p>
+Open Claude Code and paste the following:
 
 ```
 /plugin marketplace add gideonshaked/agentic-peer-review
@@ -43,6 +43,8 @@ Or from inside Claude Code:
 
 From the terminal:
 
+From the terminal:
+
 ```bash
 claude plugin marketplace update agentic-peer-review
 claude plugin update agentic-peer-review@agentic-peer-review
@@ -52,8 +54,9 @@ Or from inside Claude Code:
 
 ```bash
 /plugin marketplace update agentic-peer-review
-/plugin update agentic-peer-review@agentic-peer-review
 ```
+
+Then open `/plugin`, go to the **Installed** tab, and update the plugin from there.
 
 ### Requirements
 

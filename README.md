@@ -35,6 +35,13 @@ Or from inside Claude Code:
 /plugin install agentic-peer-review@agentic-peer-review
 ```
 
+### Updating
+
+```bash
+claude plugin marketplace update agentic-peer-review
+claude plugin update agentic-peer-review@agentic-peer-review
+```
+
 ### Requirements
 
 - [Claude Code](https://claude.ai/code)

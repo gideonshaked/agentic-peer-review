@@ -12,6 +12,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 from datetime import datetime, timezone
 
 
@@ -32,7 +33,8 @@ def cmd_setup():
     """Create worktree, sync uncommitted + untracked files, commit as baseline."""
     ts = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
     branch_name = f"peer-review/{ts}"
-    worktree_path = f"/tmp/peer-review-{ts}"
+    worktree_path = tempfile.mkdtemp(prefix=f"peer-review-{ts}-")
+    os.rmdir(worktree_path)  # git worktree add needs a non-existing path
 
     # Create worktree from HEAD
     _, err, rc = _run_git("worktree", "add", worktree_path, "-b", branch_name)
@@ -61,7 +63,9 @@ def cmd_setup():
         original_dir = os.getcwd()
         for rel_path in untracked.splitlines():
             src = os.path.join(original_dir, rel_path)
-            dst = os.path.join(worktree_path, rel_path)
+            dst = os.path.realpath(os.path.join(worktree_path, rel_path))
+            if not dst.startswith(os.path.realpath(worktree_path)):
+                continue  # skip paths that escape the worktree
             if os.path.isfile(src):
                 os.makedirs(os.path.dirname(dst), exist_ok=True)
                 shutil.copy2(src, dst)

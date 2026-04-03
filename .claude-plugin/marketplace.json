@@ -18,7 +18,7 @@
       "homepage": "https://github.com/gideonshaked/agentic-peer-review",
       "repository": "https://github.com/gideonshaked/agentic-peer-review",
       "license": "MIT",
-      "keywords": ["code-review", "peer-review", "ai-agents", "iterative"],
+      "keywords": ["code-review", "peer-review", "ai-agents", "iterative", "claude", "codex", "gemini", "multi-agent"],
       "category": "code-quality"
     }
   ]

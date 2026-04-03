@@ -11,13 +11,15 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 from datetime import datetime, timezone
 
 
 def _log_path():
     """Generate a unique temp file path."""
-    ts = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
-    return f"/tmp/peer-review-{os.getpid()}-{ts}.json"
+    fd, path = tempfile.mkstemp(prefix="peer-review-", suffix=".json")
+    os.close(fd)
+    return path
 
 
 def cmd_init():

@@ -16,7 +16,9 @@ def get_available_checks():
 
 def load_check(name):
     """Load a check's description from its .md file."""
-    path = CHECKS_DIR / f"{name}.md"
+    path = (CHECKS_DIR / f"{name}.md").resolve()
+    if not str(path).startswith(str(CHECKS_DIR.resolve())):
+        raise ValueError(f"Invalid check name: {name}")
     with open(path, encoding="utf-8") as f:
         return f.read().strip()
 

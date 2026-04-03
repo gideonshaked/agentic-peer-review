@@ -1,8 +1,6 @@
 <h1 align="center"><code>agentic-peer-review</code></h1>
 
-A Claude Code plugin that peer-reviews your code with AI agents.
-Spawns an AI code reviewer (Claude, Codex, or Gemini), implements the recommended fixes,
-and repeats until the reviewer is satisfied with the codebase.
+A Claude Code plugin that peer-reviews your code with AI agents. `agentic-peer-review` spawns an AI code reviewer (Claude, Codex, or Gemini), implements the recommended fixes, and repeats until the reviewer is satisfied with the codebase.
 
 <h3 align="center">Quickstart</h3>
 

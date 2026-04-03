@@ -1,6 +1,6 @@
 {
   "name": "agentic-peer-review",
-  "description": "Iterative AI peer review that finds and fixes issues using external agents (Claude, Codex, or Gemini CLI)",
+  "description": "Iterative AI peer review that finds and fixes issues in your codebase",
   "version": "1.0.0",
   "author": {
     "name": "Gideon Shaked"

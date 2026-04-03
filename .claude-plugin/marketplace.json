@@ -4,13 +4,13 @@
     "name": "Gideon Shaked"
   },
   "metadata": {
-    "description": "Iterative AI peer review that finds and fixes issues"
+    "description": "Iterative AI peer review that finds and fixes issues in your codebase"
   },
   "plugins": [
     {
       "name": "agentic-peer-review",
       "source": ".",
-      "description": "Iterative AI peer review that finds and fixes issues using external agents (Claude, Codex, or Gemini CLI)",
+      "description": "Iterative AI peer review that finds and fixes issues in your codebase using external agents (Claude, Codex, or Gemini CLI)",
       "version": "1.0.0",
       "author": {
         "name": "Gideon Shaked"

@@ -52,7 +52,7 @@ usage: peer-review [-h] [--agent {claude,codex,gemini}]
                    [--timeout TIMEOUT] [--worktree] [--log LOG] [--only ONLY]
                    [instructions]
 
-Iterative AI peer review that finds and fixes issues
+Iterative AI peer review that finds and fixes issues in your codebase
 
 positional arguments:
   instructions          Optional review instructions

@@ -11,7 +11,7 @@ from scripts.list_checks import get_available_checks
 def main():
     parser = argparse.ArgumentParser(
         prog="peer-review",
-        description="Iterative AI peer review that finds and fixes issues",
+        description="Iterative AI peer review that finds and fixes issues in your codebase",
         exit_on_error=False,
     )
     parser.add_argument(

@@ -48,13 +48,13 @@ CRITICAL: All script output (settings box, round headers, findings, diffs, summa
 
 Run the argument parser:
 
-  uv run --directory "${CLAUDE_SKILL_DIR}/../.." python -m scripts.parse_args $ARGUMENTS
+  uv run --project "${CLAUDE_SKILL_DIR}/../.." python -m scripts.parse_args $ARGUMENTS
 
 This returns a JSON object. If the "error" field is true, print the "message" to the user and stop.
 
 Otherwise, pipe the JSON to the format_output script to display the settings box:
 
-  echo '<parse_args output>' | uv run --directory "${CLAUDE_SKILL_DIR}/../.." python -m scripts.format_output settings
+  echo '<parse_args output>' | uv run --project "${CLAUDE_SKILL_DIR}/../.." python -m scripts.format_output settings
 
 Print the settings box output as your direct text response.
 
@@ -64,7 +64,7 @@ Record the start time using: date +%s
 
 Run the project detection script:
 
-  uv run --directory "${CLAUDE_SKILL_DIR}/../.." python -m scripts.detect_project
+  uv run --project "${CLAUDE_SKILL_DIR}/../.." python -m scripts.detect_project
 
 This returns a JSON object with "language", "framework", "working_dir", and "git_status".
 
@@ -72,7 +72,7 @@ This returns a JSON object with "language", "framework", "working_dir", and "git
 
 Initialize the change log by piping session metadata to the change_log script. This also captures the base commit SHA automatically:
 
-  echo '{"agent":"...","max_rounds":...,"focus":"...","instructions":"...","worktree":...,"project":{...}}' | uv run --directory "${CLAUDE_SKILL_DIR}/../.." python -m scripts.change_log init
+  echo '{"agent":"...","max_rounds":...,"focus":"...","instructions":"...","worktree":...,"project":{...}}' | uv run --project "${CLAUDE_SKILL_DIR}/../.." python -m scripts.change_log init
 
 Extract "log_file" and "base_commit" from the result.
 
@@ -80,7 +80,7 @@ Extract "log_file" and "base_commit" from the result.
 
 If the "worktree" flag is true, run:
 
-  uv run --directory "${CLAUDE_SKILL_DIR}/../.." python -m scripts.worktree setup
+  uv run --project "${CLAUDE_SKILL_DIR}/../.." python -m scripts.worktree setup
 
 This creates a timestamped worktree, syncs uncommitted and untracked files, and commits a baseline. Extract "worktree_path", "branch_name", and "baseline_sha" from the result. Use the worktree path as the working directory for all subsequent file reads and edits. Remember the original working directory and baseline_sha for later.
 
@@ -94,7 +94,7 @@ For each round (1 through max_rounds):
 
 Get current time and calculate elapsed seconds since start. Print the round header:
 
-  uv run --directory "${CLAUDE_SKILL_DIR}/../.." python -m scripts.format_output round-header <N> <M> --elapsed <seconds>
+  uv run --project "${CLAUDE_SKILL_DIR}/../.." python -m scripts.format_output round-header <N> <M> --elapsed <seconds>
 
 Print the round header output as your direct text response.
 
@@ -111,13 +111,13 @@ Build a JSON object and pipe it to the render script. The fields are:
 - "prior_fixes": summary of fixes from prior rounds ("" if round 1)
 - "skipped_findings": summary of skipped findings from prior rounds ("" if round 1)
 
-  echo '{ ... }' | uv run --directory "${CLAUDE_SKILL_DIR}/../.." python -m scripts.render_prompt
+  echo '{ ... }' | uv run --project "${CLAUDE_SKILL_DIR}/../.." python -m scripts.render_prompt
 
 #### 5c. Execute the review agent
 
 Pipe the rendered prompt into the run_review script, passing the agent name and timeout as arguments.
 
-  echo '{ ... }' | uv run --directory "${CLAUDE_SKILL_DIR}/../.." python -m scripts.render_prompt | uv run --directory "${CLAUDE_SKILL_DIR}/../.." python -m scripts.run_review <agent> <timeout>
+  echo '{ ... }' | uv run --project "${CLAUDE_SKILL_DIR}/../.." python -m scripts.render_prompt | uv run --project "${CLAUDE_SKILL_DIR}/../.." python -m scripts.run_review <agent> <timeout>
 
 If the command fails (non-zero exit), print the error and stop the loop.
 
@@ -147,7 +147,7 @@ Keep a running log of all fixes made AND all findings intentionally skipped (wit
 
 After fixing, build a JSON object with the round's structured data and append it to the change log:
 
-  echo '{"round_num": N, "findings": [...], "fixes": [...], "skipped": [...]}' | uv run --directory "${CLAUDE_SKILL_DIR}/../.." python -m scripts.change_log add-round <log_file>
+  echo '{"round_num": N, "findings": [...], "fixes": [...], "skipped": [...]}' | uv run --project "${CLAUDE_SKILL_DIR}/../.." python -m scripts.change_log add-round <log_file>
 
 Each finding object has: id (format "rNfM" e.g. "r1f1"), file, line, severity, category, description.
 Each fix object has: finding_id, file, what_changed, why.
@@ -161,13 +161,13 @@ If there are more rounds remaining, print: "Proceeding to next round..."
 
 If --worktree was used, commit the review fixes in the worktree:
 
-  uv run --directory "${CLAUDE_SKILL_DIR}/../.." python -m scripts.worktree commit <worktree_path>
+  uv run --project "${CLAUDE_SKILL_DIR}/../.." python -m scripts.worktree commit <worktree_path>
 
 ### 7. Show diff and explain changes
 
 Capture the diff. For worktree mode, diff against the baseline_sha (from step 4) to show only the fixes, not the synced baseline. For non-worktree mode, diff against base_commit (from step 3):
 
-  uv run --directory "${CLAUDE_SKILL_DIR}/../.." python -m scripts.git_diff <working_dir> <baseline_sha or base_commit>
+  uv run --project "${CLAUDE_SKILL_DIR}/../.." python -m scripts.git_diff <working_dir> <baseline_sha or base_commit>
 
 If the diff is non-empty:
 
@@ -184,25 +184,25 @@ If --worktree was used:
 
 2. If yes: apply the fixes to the original working directory using the merge subcommand. This extracts only the fix diff (baseline..HEAD) and applies it as a patch — no git merge, no conflicts:
 
-  uv run --directory "${CLAUDE_SKILL_DIR}/../.." python -m scripts.worktree merge <worktree_path> <baseline_sha>
+  uv run --project "${CLAUDE_SKILL_DIR}/../.." python -m scripts.worktree merge <worktree_path> <baseline_sha>
 
 3. Clean up either way:
 
-  uv run --directory "${CLAUDE_SKILL_DIR}/../.." python -m scripts.worktree teardown <worktree_path> <branch_name>
+  uv run --project "${CLAUDE_SKILL_DIR}/../.." python -m scripts.worktree teardown <worktree_path> <branch_name>
 
 ### 9. Final summary
 
 Finalize the change log:
 
-  uv run --directory "${CLAUDE_SKILL_DIR}/../.." python -m scripts.change_log finalize <log_file>
+  uv run --project "${CLAUDE_SKILL_DIR}/../.." python -m scripts.change_log finalize <log_file>
 
 Then print the summary box as your direct text response:
 
-  uv run --directory "${CLAUDE_SKILL_DIR}/../.." python -m scripts.format_output summary <log_file>
+  uv run --project "${CLAUDE_SKILL_DIR}/../.." python -m scripts.format_output summary <log_file>
 
 If --log was specified, render the markdown log from the JSON:
 
-  uv run --directory "${CLAUDE_SKILL_DIR}/../.." python -m scripts.change_log render-md <log_file> --output <log_path>
+  uv run --project "${CLAUDE_SKILL_DIR}/../.." python -m scripts.change_log render-md <log_file> --output <log_path>
 
 ## Notes
 

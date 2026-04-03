@@ -21,7 +21,14 @@ and repeats until the reviewer is satisfied with the codebase.
 
 ### Getting started
 
-Add the marketplace and install the plugin:
+From the terminal:
+
+```bash
+claude plugin marketplace add gideonshaked/agentic-peer-review
+claude plugin install agentic-peer-review@agentic-peer-review
+```
+
+Or from inside Claude Code:
 
 ```bash
 /plugin marketplace add gideonshaked/agentic-peer-review

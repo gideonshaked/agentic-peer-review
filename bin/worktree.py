@@ -45,33 +45,26 @@ def cmd_setup():
         )
         sys.exit(0)
 
-    # Sync uncommitted tracked changes
-    diff, _, rc = _run_git("diff", "HEAD")
-    if rc == 0 and diff:
-        apply = subprocess.run(
-            ["git", "apply", "--allow-empty"],
-            input=diff,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            cwd=worktree_path,
-            timeout=30,
-        )
-        if apply.returncode != 0:
-            print(
-                f"Warning: failed to sync uncommitted changes: {apply.stderr.strip()}",
-                file=sys.stderr,
-            )
+    # Sync modified tracked files by copying them directly (more robust than git diff | git apply)
+    modified, _, rc = _run_git("diff", "--name-only", "HEAD")
+    original_dir = os.getcwd()
+    if rc == 0 and modified:
+        for rel_path in modified.splitlines():
+            src = os.path.join(original_dir, rel_path)
+            dst = os.path.realpath(os.path.join(worktree_path, rel_path))
+            if not dst.startswith(os.path.realpath(worktree_path)):
+                continue
+            if os.path.isfile(src):
+                shutil.copy2(src, dst)
 
     # Sync untracked files
     untracked, _, _ = _run_git("ls-files", "--others", "--exclude-standard")
     if untracked:
-        original_dir = os.getcwd()
         for rel_path in untracked.splitlines():
             src = os.path.join(original_dir, rel_path)
             dst = os.path.realpath(os.path.join(worktree_path, rel_path))
             if not dst.startswith(os.path.realpath(worktree_path)):
-                continue  # skip paths that escape the worktree
+                continue
             if os.path.isfile(src):
                 os.makedirs(os.path.dirname(dst), exist_ok=True)
                 shutil.copy2(src, dst)

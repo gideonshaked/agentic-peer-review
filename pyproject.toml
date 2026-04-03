@@ -9,7 +9,7 @@ dependencies = ["jinja2"]
 dev = ["ruff"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["scripts"]
+packages = ["bin"]
 
 [build-system]
 requires = ["hatchling"]

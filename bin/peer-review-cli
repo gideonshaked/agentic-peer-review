@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
+exec uv run --project "$PLUGIN_ROOT" python -m bin.cli "$@"

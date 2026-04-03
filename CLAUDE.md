@@ -29,7 +29,7 @@ The plugin follows a strict separation: the skill definition (`skills/peer-revie
 - `scripts/parse_args.py` — CLI argument parsing. Returns JSON with `agent`, `max_rounds`, `instructions`, `focus`, `timeout`, `worktree`, `log`, `checks`, `all_checks`. Validates `--only` check names against available checks.
 - `scripts/list_checks.py` — Scans `references/checks/` for `.md` files. Returns available check names. To add a check, drop a `.md` file in that directory.
 - `scripts/detect_project.py` — Scans for project files (pyproject.toml, package.json, etc.) to determine language and framework. Returns JSON.
-- `scripts/render_prompt.py` — Reads JSON from stdin, loads check descriptions from `references/checks/`, renders `scripts/prompts/audit.j2` via Jinja2.
+- `scripts/render_prompt.py` — Reads JSON from stdin, loads check descriptions from `skills/peer-review/references/checks/`, renders `skills/peer-review/prompts/audit.j2` via Jinja2.
 - `scripts/run_review.py` — Takes agent name and optional timeout as args, reads prompt from stdin, invokes the correct CLI. Claude and Codex receive the prompt via stdin; Gemini receives it as the `-p` argument value.
 - `scripts/format_output.py` — All deterministic formatted output. Subcommands: `settings` (settings box), `round-header` (round header with optional time estimate), `summary` (final summary box). Uses box-drawing characters.
 - `scripts/worktree.py` — Git worktree lifecycle. Subcommands: `setup` (creates timestamped worktree + branch), `teardown` (removes worktree, optionally keeps branch).

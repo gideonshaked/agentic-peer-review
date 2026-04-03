@@ -6,7 +6,7 @@ import json
 import shutil
 import sys
 
-from scripts.list_checks import get_available_checks
+from bin.list_checks import get_available_checks
 
 
 def main():

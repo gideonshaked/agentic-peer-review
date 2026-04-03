@@ -14,12 +14,17 @@ Open Claude Code and paste the following:
 /peer-review
 ```
 
+Then run peer review on the current claude workspace:
+
+```
+/peer-review
+```
+
 <p align="center">
   <a href="#install">Install</a> &bull;
   <a href="#usage">Usage</a> &bull;
   <a href="#options">Options</a>
 </p>
-
 
 ## Install
 

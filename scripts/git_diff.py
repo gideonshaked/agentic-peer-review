@@ -3,6 +3,7 @@
 
 Returns JSON with the full diff text, list of changed files, and stats summary.
 """
+
 import json
 import subprocess
 import sys

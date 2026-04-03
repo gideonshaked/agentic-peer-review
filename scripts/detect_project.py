@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Detect project language, framework, and context."""
+
 import glob
 import json
 import os

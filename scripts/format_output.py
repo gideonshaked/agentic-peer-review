@@ -6,6 +6,7 @@ Subcommands:
     round-header <N> <M>         Render round header (optional --elapsed <sec>)
     summary <log_file>           Render final summary box
 """
+
 import json
 import sys
 
@@ -48,10 +49,6 @@ def cmd_settings(json_str):
     active = len(active_checks)
 
     checks_label = ", ".join(c.replace("-", " ") for c in active_checks)
-    if active == total:
-        checks_line = f"all ({checks_label})"
-    else:
-        checks_line = f"{checks_label} ({active} of {total})"
 
     instructions = data.get("instructions", "")
     if instructions:
@@ -111,7 +108,10 @@ def cmd_summary(log_file):
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: format_output <settings|round-header|summary> [args]", file=sys.stderr)
+        print(
+            "Usage: format_output <settings|round-header|summary> [args]",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     cmd = sys.argv[1]
@@ -123,7 +123,10 @@ def main():
         cmd_settings(json_str)
     elif cmd == "round-header":
         if len(sys.argv) < 4:
-            print("Usage: format_output round-header <N> <M> [--elapsed <sec>]", file=sys.stderr)
+            print(
+                "Usage: format_output round-header <N> <M> [--elapsed <sec>]",
+                file=sys.stderr,
+            )
             sys.exit(1)
         round_num = int(sys.argv[2])
         total_rounds = int(sys.argv[3])

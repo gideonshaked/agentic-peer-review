@@ -4,6 +4,7 @@
 Reads the audit prompt from stdin, invokes the chosen CLI,
 and prints the review output to stdout.
 """
+
 import subprocess
 import sys
 

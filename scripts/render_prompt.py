@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Render the audit prompt template with provided variables."""
+
 import json
 import sys
 from pathlib import Path
@@ -16,10 +17,13 @@ def main():
 
     # Resolve check names to {name, description} dicts
     check_names = data.get("checks", [])
-    if isinstance(check_names, list) and check_names and isinstance(check_names[0], str):
+    if (
+        isinstance(check_names, list)
+        and check_names
+        and isinstance(check_names[0], str)
+    ):
         data["checks"] = [
-            {"name": name, "description": load_check(name)}
-            for name in check_names
+            {"name": name, "description": load_check(name)} for name in check_names
         ]
 
     env = Environment(loader=FileSystemLoader(PROMPTS_DIR), keep_trailing_newline=True)

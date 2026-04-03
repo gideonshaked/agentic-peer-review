@@ -7,6 +7,7 @@ Subcommands:
     finalize    Compute summary, set completed_at, print JSON
     render-md   Render the finalized JSON as a markdown log file
 """
+
 import json
 import os
 import subprocess
@@ -31,7 +32,10 @@ def cmd_init():
     try:
         result = subprocess.run(
             ["git", "rev-parse", "HEAD"],
-            capture_output=True, text=True, encoding="utf-8", timeout=10,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=10,
         )
         base_commit = result.stdout.strip() if result.returncode == 0 else ""
     except Exception:
@@ -90,11 +94,15 @@ def cmd_render_md(log_file, output_path):
 
     meta = data["meta"]
     lines = [
-        f"# Peer Review Log",
+        "# Peer Review Log",
         "",
         f"- **Agent:** {meta['agent']}",
         f"- **Project:** {meta['project'].get('language', 'unknown')}"
-        + (f"/{meta['project']['framework']}" if meta['project'].get('framework') else ""),
+        + (
+            f"/{meta['project']['framework']}"
+            if meta["project"].get("framework")
+            else ""
+        ),
         f"- **Working directory:** {meta['project'].get('working_dir', '')}",
         f"- **Started:** {meta.get('started_at', '')}",
         f"- **Completed:** {meta.get('completed_at', '')}",
@@ -161,7 +169,10 @@ def cmd_render_md(log_file, output_path):
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: change_log <init|add-round|finalize|render-md> [args]", file=sys.stderr)
+        print(
+            "Usage: change_log <init|add-round|finalize|render-md> [args]",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     cmd = sys.argv[1]
@@ -179,7 +190,10 @@ def main():
         cmd_finalize(sys.argv[2])
     elif cmd == "render-md":
         if len(sys.argv) < 3:
-            print("Usage: change_log render-md <log_file> --output <path>", file=sys.stderr)
+            print(
+                "Usage: change_log render-md <log_file> --output <path>",
+                file=sys.stderr,
+            )
             sys.exit(1)
         output_path = ""
         for i, arg in enumerate(sys.argv):

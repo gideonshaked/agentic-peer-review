@@ -7,6 +7,7 @@ Subcommands:
     merge <path> <baseline_sha>    Apply only the fix diff to the original working directory
     teardown <path> <branch>       Remove worktree and optionally delete branch
 """
+
 import json
 import os
 import shutil
@@ -39,7 +40,9 @@ def cmd_setup():
     # Create worktree from HEAD
     _, err, rc = _run_git("worktree", "add", worktree_path, "-b", branch_name)
     if rc != 0:
-        print(json.dumps({"error": True, "message": f"Failed to create worktree: {err}"}))
+        print(
+            json.dumps({"error": True, "message": f"Failed to create worktree: {err}"})
+        )
         sys.exit(0)
 
     # Sync uncommitted tracked changes
@@ -55,7 +58,10 @@ def cmd_setup():
             timeout=30,
         )
         if apply.returncode != 0:
-            print(f"Warning: failed to sync uncommitted changes: {apply.stderr.strip()}", file=sys.stderr)
+            print(
+                f"Warning: failed to sync uncommitted changes: {apply.stderr.strip()}",
+                file=sys.stderr,
+            )
 
     # Sync untracked files
     untracked, _, _ = _run_git("ls-files", "--others", "--exclude-standard")
@@ -77,18 +83,26 @@ def cmd_setup():
     # Capture baseline SHA
     baseline_sha, _, _ = _run_git("-C", worktree_path, "rev-parse", "HEAD")
 
-    print(json.dumps({
-        "worktree_path": worktree_path,
-        "branch_name": branch_name,
-        "baseline_sha": baseline_sha,
-    }))
+    print(
+        json.dumps(
+            {
+                "worktree_path": worktree_path,
+                "branch_name": branch_name,
+                "baseline_sha": baseline_sha,
+            }
+        )
+    )
 
 
 def cmd_commit(worktree_path):
     """Commit review fixes in the worktree."""
     _, add_err, add_rc = _run_git("-C", worktree_path, "add", "-A")
     if add_rc != 0:
-        print(json.dumps({"error": True, "message": f"Failed to stage changes: {add_err}"}))
+        print(
+            json.dumps(
+                {"error": True, "message": f"Failed to stage changes: {add_err}"}
+            )
+        )
         sys.exit(0)
     stdout, err, rc = _run_git("-C", worktree_path, "commit", "-m", "Peer review fixes")
     if rc != 0:
@@ -96,7 +110,9 @@ def cmd_commit(worktree_path):
         if "nothing to commit" in stdout or "nothing to commit" in err:
             print(json.dumps({"ok": True, "committed": False}))
             return
-        print(json.dumps({"error": True, "message": f"Failed to commit: {err or stdout}"}))
+        print(
+            json.dumps({"error": True, "message": f"Failed to commit: {err or stdout}"})
+        )
         sys.exit(0)
     print(json.dumps({"ok": True, "committed": True}))
 
@@ -121,11 +137,17 @@ def cmd_merge(worktree_path, baseline_sha):
     diff = result.stdout
     rc = result.returncode
     if rc != 0 or not diff.strip():
-        print(json.dumps({"ok": True, "applied": False, "message": "No fix changes to apply"}))
+        print(
+            json.dumps(
+                {"ok": True, "applied": False, "message": "No fix changes to apply"}
+            )
+        )
         return
 
     # Write patch to temp file to avoid stdin encoding issues
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".patch", delete=False, encoding="utf-8") as f:
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".patch", delete=False, encoding="utf-8"
+    ) as f:
         f.write(diff)
         patch_path = f.name
 
@@ -138,7 +160,14 @@ def cmd_merge(worktree_path, baseline_sha):
             timeout=30,
         )
         if apply.returncode != 0:
-            print(json.dumps({"error": True, "message": f"Failed to apply fixes: {apply.stderr.strip()}"}))
+            print(
+                json.dumps(
+                    {
+                        "error": True,
+                        "message": f"Failed to apply fixes: {apply.stderr.strip()}",
+                    }
+                )
+            )
             sys.exit(0)
         print(json.dumps({"ok": True, "applied": True}))
     finally:
@@ -168,12 +197,17 @@ def main():
         cmd_commit(sys.argv[2])
     elif cmd == "merge":
         if len(sys.argv) < 4:
-            print("Usage: worktree merge <worktree_path> <baseline_sha>", file=sys.stderr)
+            print(
+                "Usage: worktree merge <worktree_path> <baseline_sha>", file=sys.stderr
+            )
             sys.exit(1)
         cmd_merge(sys.argv[2], sys.argv[3])
     elif cmd == "teardown":
         if len(sys.argv) < 4:
-            print("Usage: worktree teardown <path> <branch> [--keep-branch]", file=sys.stderr)
+            print(
+                "Usage: worktree teardown <path> <branch> [--keep-branch]",
+                file=sys.stderr,
+            )
             sys.exit(1)
         keep = "--keep-branch" in sys.argv
         cmd_teardown(sys.argv[2], sys.argv[3], keep_branch=keep)

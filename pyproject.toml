@@ -5,6 +5,9 @@ description = "Iterative AI peer review that finds and fixes issues in your code
 requires-python = ">=3.10"
 dependencies = ["jinja2"]
 
+[dependency-groups]
+dev = ["ruff"]
+
 [tool.hatch.build.targets.wheel]
 packages = ["scripts"]
 

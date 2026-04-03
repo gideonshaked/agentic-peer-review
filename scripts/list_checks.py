@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Discover available checks by scanning references/checks/ for .md files."""
+
 import json
-import os
 from pathlib import Path
 
-CHECKS_DIR = Path(__file__).parent.parent / "skills" / "peer-review" / "references" / "checks"
+CHECKS_DIR = (
+    Path(__file__).parent.parent / "skills" / "peer-review" / "references" / "checks"
+)
 
 
 def get_available_checks():

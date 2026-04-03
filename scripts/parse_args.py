@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Argument parser for the agentic-peer-review plugin."""
+
 import argparse
 import json
 import shutil

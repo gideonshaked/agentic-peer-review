@@ -38,6 +38,7 @@ Or from inside Claude Code:
 ### Requirements
 
 - [Claude Code](https://claude.ai/code)
+- [uv](https://docs.astral.sh/uv/)
 - [Codex](https://github.com/openai/codex) (only required for using OpenAI Codex as a reviewer agent)
 - [Gemini CLI](https://github.com/google-gemini/gemini-cli) (only required for using Google Gemini as a reviewer agent)
 

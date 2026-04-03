@@ -4,18 +4,20 @@ A Claude Code plugin that peer-reviews your code with AI agents.
 Spawns an AI code reviewer (Claude, Codex, or Gemini), implements the recommended fixes,
 and repeats until the reviewer is satisfied with the codebase.
 
-### Quickstart
+<h3 align="center">Quickstart</h3>
 
-1. Open [Claude Code](https://claude.ai/code)
-2. `/plugin marketplace add gideonshaked/agentic-peer-review`
-3. `/plugin install agentic-peer-review@agentic-peer-review`
-4. `/peer-review`
+<p align="center">Open Claude Code and paste the following:</p>
+
+```
+/plugin marketplace add gideonshaked/agentic-peer-review
+/plugin install agentic-peer-review@agentic-peer-review
+/peer-review
+```
 
 <p align="center">
   <a href="#install">Install</a> &bull;
   <a href="#usage">Usage</a> &bull;
-  <a href="#options">Options</a> &bull;
-  <a href="#checks">Checks</a>
+  <a href="#options">Options</a>
 </p>
 
 

@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "agentic-peer-review",
-      "source": ".",
+      "source": "./",
       "description": "Iterative AI peer review that finds and fixes issues in your codebase using external agents (Claude, Codex, or Gemini CLI)",
       "version": "1.0.0",
       "author": {

@@ -83,13 +83,17 @@ Then open `/plugin`, go to the **Installed** tab, and update the plugin from the
 ```
 ┌─ Claude Code ───────────────────────────────────────────────────────────────────────┐
 │  > /peer-review -h                                                                  │
+│                                                                                     │
 │  usage: peer-review [-h] [--agent {claude,codex,gemini}]                            │
 │                     [--max-rounds MAX_ROUNDS] [--focus FOCUS]                       │
 │                     [--timeout TIMEOUT] [--worktree] [--log LOG] [--only ONLY]      │
 │                     [instructions]                                                  │
+│                                                                                     │
 │  Iterative AI peer review that finds and fixes issues in your codebase              │
+│                                                                                     │
 │  positional arguments:                                                              │
 │    instructions          Optional review instructions                               │
+│                                                                                     │
 │  options:                                                                           │
 │    -h, --help            show this help message and exit                            │
 │    --agent {claude,codex,gemini}                                                    │

@@ -6,7 +6,7 @@ and repeats until the reviewer is satisfied with the codebase.
 
 ```bash
 # Review with Codex for up to 3 rounds, only checking bugs and security, in an isolated worktree, with a log file and custom instructions.
-/peer-review --agent codex --max-rounds 3 --only bugs,security --worktree --log review.md "focus on the auth module"
+/agentic-peer-review:peer-review --agent codex --max-rounds 3 --only bugs,security --worktree --log review.md "focus on the auth module"
 ```
 
 <p align="center">
@@ -21,8 +21,11 @@ and repeats until the reviewer is satisfied with the codebase.
 
 ### Getting started
 
-```
-claude plugin add https://github.com/gideonshaked/agentic-peer-review.git
+Add the marketplace and install the plugin:
+
+```bash
+/plugin marketplace add gideonshaked/agentic-peer-review
+/plugin install agentic-peer-review@agentic-peer-review
 ```
 
 ### Requirements
@@ -36,7 +39,7 @@ claude plugin add https://github.com/gideonshaked/agentic-peer-review.git
 ### Help output
 
 ```
-$ /agentic-peer-review:peer-review -h
+/agentic-peer-review:peer-review -h
 usage: peer-review [-h] [--agent {claude,codex,gemini}]
                    [--max-rounds MAX_ROUNDS] [--focus FOCUS]
                    [--timeout TIMEOUT] [--worktree] [--log LOG] [--only ONLY]

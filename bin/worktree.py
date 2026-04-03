@@ -10,7 +10,6 @@ Subcommands:
 
 import json
 import os
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -45,29 +44,18 @@ def cmd_setup():
         )
         sys.exit(0)
 
-    # Sync modified tracked files by copying them directly (more robust than git diff | git apply)
-    modified, _, rc = _run_git("diff", "--name-only", "HEAD")
-    original_dir = os.getcwd()
-    if rc == 0 and modified:
-        for rel_path in modified.splitlines():
-            src = os.path.join(original_dir, rel_path)
-            dst = os.path.realpath(os.path.join(worktree_path, rel_path))
-            if not dst.startswith(os.path.realpath(worktree_path)):
-                continue
-            if os.path.isfile(src):
-                shutil.copy2(src, dst)
-
-    # Sync untracked files
-    untracked, _, _ = _run_git("ls-files", "--others", "--exclude-standard")
-    if untracked:
-        for rel_path in untracked.splitlines():
-            src = os.path.join(original_dir, rel_path)
-            dst = os.path.realpath(os.path.join(worktree_path, rel_path))
-            if not dst.startswith(os.path.realpath(worktree_path)):
-                continue
-            if os.path.isfile(src):
-                os.makedirs(os.path.dirname(dst), exist_ok=True)
-                shutil.copy2(src, dst)
+    # Sync working state using git stash.
+    # stash create makes a stash commit without touching the working tree.
+    # --include-untracked captures untracked files too.
+    stash_sha, _, rc = _run_git("stash", "create", "--include-untracked")
+    if rc == 0 and stash_sha:
+        # Apply the stash in the worktree
+        _, err, rc = _run_git("-C", worktree_path, "stash", "apply", stash_sha)
+        if rc != 0:
+            print(
+                f"Warning: failed to sync working state to worktree: {err}",
+                file=sys.stderr,
+            )
 
     # Commit everything as baseline (so we can later diff baseline..fixes)
     _run_git("-C", worktree_path, "add", "-A")

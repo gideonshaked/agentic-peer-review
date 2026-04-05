@@ -4,11 +4,9 @@
 Usage:
     render-prompt --language PY --working-dir /path --round-num 1 --total-rounds 3 \
         --checks bugs,security [--framework django] [--instructions "..."] \
-        [--focus src/] [--prior-fixes-file /tmp/fixes.txt] \
-        [--skipped-findings-file /tmp/skipped.txt]
+        [--focus src/] [--prior-fixes "..."] [--skipped-findings "..."]
 
-All simple string args are passed directly. Multi-line values (prior_fixes,
-skipped_findings) are read from files to avoid shell escaping issues.
+All values are passed as CLI arguments directly.
 """
 
 import argparse
@@ -31,27 +29,11 @@ def main():
     parser.add_argument("--checks", required=True, help="Comma-separated check names")
     parser.add_argument("--round-num", type=int, required=True)
     parser.add_argument("--total-rounds", type=int, required=True)
+    parser.add_argument("--prior-fixes", default="", help="Prior fixes summary text")
     parser.add_argument(
-        "--prior-fixes-file",
-        default="",
-        help="Path to file containing prior fixes summary",
-    )
-    parser.add_argument(
-        "--skipped-findings-file",
-        default="",
-        help="Path to file containing skipped findings summary",
+        "--skipped-findings", default="", help="Skipped findings summary text"
     )
     args = parser.parse_args()
-
-    prior_fixes = ""
-    if args.prior_fixes_file:
-        prior_fixes = Path(args.prior_fixes_file).read_text(encoding="utf-8").strip()
-
-    skipped_findings = ""
-    if args.skipped_findings_file:
-        skipped_findings = (
-            Path(args.skipped_findings_file).read_text(encoding="utf-8").strip()
-        )
 
     check_names = [c.strip() for c in args.checks.split(",") if c.strip()]
     checks = [{"name": name, "description": load_check(name)} for name in check_names]
@@ -65,8 +47,8 @@ def main():
         "checks": checks,
         "round_num": args.round_num,
         "total_rounds": args.total_rounds,
-        "prior_fixes": prior_fixes,
-        "skipped_findings": skipped_findings,
+        "prior_fixes": args.prior_fixes,
+        "skipped_findings": args.skipped_findings,
     }
 
     env = Environment(loader=FileSystemLoader(PROMPTS_DIR), keep_trailing_newline=True)

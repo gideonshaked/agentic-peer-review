@@ -117,8 +117,8 @@ Build the prompt and pipe it to the review agent in a single command:
     [--framework <framework>] \
     [--instructions "<instructions>"] \
     [--focus "<focus>"] \
-    [--prior-fixes-file <path>] \
-    [--skipped-findings-file <path>] \
+    [--prior-fixes "<prior fixes text>"] \
+    [--skipped-findings "<skipped findings text>"] \
     | peer-review-cli run-review <agent> <timeout>
 
 Arguments:
@@ -128,10 +128,8 @@ Arguments:
 - --checks: comma-separated list of active check names from step 1
 - --round-num: current round (1-indexed)
 - --total-rounds: total number of rounds
-- --prior-fixes-file: path to a temp file containing the prior fixes summary (omit if round 1)
-- --skipped-findings-file: path to a temp file containing skipped findings summary (omit if round 1)
-
-For prior_fixes and skipped_findings, write the multi-line text to temp files and pass the file paths. This avoids shell escaping issues with newlines and special characters.
+- --prior-fixes: summary of fixes from prior rounds (omit if round 1)
+- --skipped-findings: summary of skipped findings from prior rounds (omit if round 1)
 
 If the command fails (non-zero exit, e.g. timeout), print the error and continue to the next round. Do not stop the loop — prior rounds may have produced useful fixes.
 

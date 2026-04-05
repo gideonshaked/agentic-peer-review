@@ -35,7 +35,7 @@ All scripts are accessed via the `peer-review-cli` entrypoint in `bin/`, which i
 - `bin/parse_args.py` — CLI argument parsing. Returns JSON with `agent`, `max_rounds`, `instructions`, `focus`, `timeout`, `worktree`, `log`, `checks`, `all_checks`. Validates `--only` check names against available checks.
 - `bin/list_checks.py` — Scans `skills/peer-review/references/checks/` for `.md` files. Returns available check names. To add a check, drop a `.md` file in that directory.
 - `bin/detect_project.py` — Scans for project files (pyproject.toml, package.json, etc.) to determine language and framework. Returns JSON.
-- `bin/render_prompt.py` — Accepts CLI args (--language, --checks, etc.), loads check descriptions, renders `bin/prompts/audit.j2` via Jinja2. Multi-line values (prior fixes, skipped findings) are read from file paths to avoid shell escaping issues.
+- `bin/render_prompt.py` — Accepts CLI args (--language, --checks, --prior-fixes, etc.), loads check descriptions, renders `bin/prompts/audit.j2` via Jinja2.
 - `bin/run_review.py` — Takes agent name and optional timeout as args, reads prompt from stdin, invokes the correct CLI. Claude and Codex receive the prompt via stdin; Gemini receives it as the `-p` argument value.
 - `bin/format_output.py` — All deterministic formatted output. Subcommands: `settings` (settings box), `round-header` (round header with optional time estimate), `summary` (final summary box). Uses box-drawing characters.
 - `bin/worktree.py` — Git worktree lifecycle. Subcommands: `setup` (creates timestamped worktree + branch), `commit` (per-round, accepts `--message`), `merge` (applies per-round commits via format-patch/am, stashes/restores uncommitted changes), `teardown`.

@@ -56,9 +56,9 @@ If --help or --version was passed, this prints plain text (not JSON) and exits. 
 
 Otherwise, this returns a JSON object. If the "error" field is true, print the "message" to the user and stop.
 
-Otherwise, pipe the JSON to the format_output script to display the settings box:
+Otherwise, pass the JSON to the format_output script to display the settings box:
 
-  echo '<parse_args output>' | peer-review-cli format-output settings
+  peer-review-cli format-output settings '<parse_args output>'
 
 Print the settings box output as your direct text response.
 

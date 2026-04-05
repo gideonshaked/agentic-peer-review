@@ -83,7 +83,11 @@ def cmd_round_header(round_num, total_rounds, elapsed=None):
         remaining_seconds = avg_per_round * (total_rounds - round_num + 1)
         hours = int(remaining_seconds // 3600)
         minutes = int((remaining_seconds % 3600) // 60)
-        text += f" (est. {hours:02d}:{minutes:02d} remaining)"
+        seconds = int(remaining_seconds % 60)
+        if hours > 0:
+            text += f" (est. {hours}h {minutes:02d}m remaining)"
+        else:
+            text += f" (est. {minutes:02d}:{seconds:02d} remaining)"
 
     print(simple_box(text))
 

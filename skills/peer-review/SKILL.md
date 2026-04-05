@@ -26,7 +26,7 @@ Usage: /peer-review [--agent claude|codex|gemini] [--max-rounds N] [--focus path
 - --focus: narrow the review to a specific file or directory
 - --only: comma-separated list of checks to run (default: all). Available: architecture, bugs, dead-code, performance, security, tech-debt
 - --timeout: timeout in seconds for each agent invocation (default: 300)
-- --worktree: run all fixes in a git worktree; show diff at end and ask to merge or discard
+- --worktree: run all fixes in a git worktree. Each round is committed separately and ported as individual commits on merge. Shows diff at end and asks to merge or discard
 - --log: write findings and fix/skip decisions to the specified markdown file
 - instructions: optional quoted string with additional review instructions
 
@@ -100,24 +100,26 @@ Print the round header output as your direct text response.
 
 #### 5b. Build the audit prompt
 
-Build a JSON object and pipe it to the render script. The fields are:
+Run the render script with the following arguments:
 
-- "language", "framework", "working_dir": from step 2 (or worktree path if --worktree)
-- "instructions": from step 1 (may be "")
-- "focus": from step 1 (may be "")
-- "checks": the list of active check names from step 1
-- "round_num": current round (1-indexed)
-- "total_rounds": total number of rounds
-- "prior_fixes": summary of fixes from prior rounds ("" if round 1)
-- "skipped_findings": summary of skipped findings from prior rounds ("" if round 1)
+- --language, --framework, --working-dir: from step 2 (or worktree path if --worktree)
+- --instructions: from step 1 (may be "")
+- --focus: from step 1 (may be "")
+- --checks: comma-separated list of active check names from step 1
+- --round-num: current round (1-indexed)
+- --total-rounds: total number of rounds
+- --prior-fixes-file: path to a temp file containing the prior fixes summary (omit if round 1)
+- --skipped-findings-file: path to a temp file containing skipped findings summary (omit if round 1)
 
-  echo '{ ... }' | peer-review-cli render-prompt
+For prior_fixes and skipped_findings, write the multi-line text to temp files and pass the file paths. This avoids shell escaping issues with newlines and special characters.
+
+  peer-review-cli render-prompt --language Python --working-dir /path --checks bugs,security --round-num 1 --total-rounds 3 [--prior-fixes-file /tmp/fixes.txt] [--skipped-findings-file /tmp/skipped.txt]
 
 #### 5c. Execute the review agent
 
 Pipe the rendered prompt into the run_review script, passing the agent name and timeout as arguments.
 
-  echo '{ ... }' | peer-review-cli render-prompt | peer-review-cli run-review <agent> <timeout>
+  peer-review-cli render-prompt <args...> | peer-review-cli run-review <agent> <timeout>
 
 If the command fails (non-zero exit), print the error and stop the loop.
 
@@ -153,17 +155,19 @@ Each finding object has: id (format "rNfM" e.g. "r1f1"), file, line, severity, c
 Each fix object has: finding_id, file, what_changed, why.
 Each skipped object has: finding_id, file, severity, reason.
 
-#### 5g. End of round
+#### 5g. Commit round fixes (if --worktree)
+
+If --worktree is active, commit this round's fixes in the worktree. Write a commit message with the prefix "agentic-peer-review:" followed by a concise summary of what was fixed in this round (e.g. "agentic-peer-review: fix SQL injection in login query and add input validation"):
+
+  peer-review-cli worktree commit <worktree_path> --message "agentic-peer-review (round N/M): <summary of round fixes>"
+
+If "committed" is false, no changes were made this round.
+
+#### 5h. End of round
 
 If there are more rounds remaining, print: "Proceeding to next round..."
 
-### 6. Commit worktree changes (if --worktree)
-
-If --worktree was used, commit the review fixes in the worktree:
-
-  peer-review-cli worktree commit <worktree_path>
-
-### 7. Show diff and explain changes
+### 6. Show diff and explain changes
 
 Capture the diff. For worktree mode, diff against the baseline_sha (from step 4) to show only the fixes, not the synced baseline. For non-worktree mode, diff against base_commit (from step 3):
 
@@ -176,21 +180,23 @@ If the diff is non-empty:
 
 If the diff is empty, print "No files were modified."
 
-### 8. Worktree resolution (if --worktree)
+### 7. Worktree resolution (if --worktree)
 
 If --worktree was used:
 
 1. Ask the user using AskUserQuestion whether to merge the changes shown in the diff into their working tree.
 
-2. If yes: apply the fixes to the original working directory using the merge subcommand. This extracts only the fix diff (baseline..HEAD) and applies it as a patch — no git merge, no conflicts:
+2. If yes: apply the per-round commits to the original working directory. Each round becomes a separate commit. Uncommitted changes are stashed during merge and restored after:
 
   peer-review-cli worktree merge <worktree_path> <baseline_sha>
+
+If the result contains a "stash_warning", print it to the user.
 
 3. Clean up either way:
 
   peer-review-cli worktree teardown <worktree_path> <branch_name>
 
-### 9. Final summary
+### 8. Final summary
 
 Finalize the change log:
 
@@ -213,7 +219,8 @@ If --log was specified, render the markdown log from the JSON:
 - Each round builds on prior fixes — the review agent sees the updated codebase
 - When --worktree is active, fixes are isolated; the user's working tree is untouched until merge
 - The worktree setup syncs uncommitted + untracked files and commits a baseline
-- Merging uses git apply (patch-based), not git merge — avoids conflicts with untracked files
+- Each round's fixes are committed separately in the worktree, then ported as individual commits via format-patch/am
+- Merging stashes uncommitted changes, applies per-round commits, then restores the stash
 - The --log file path is always relative to the original working directory
 - A structured JSON change log is always produced in a temp file, regardless of --log
 - Checks are defined in references/checks/ — add a .md file to create a new check

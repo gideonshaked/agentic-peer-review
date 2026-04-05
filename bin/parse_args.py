@@ -42,7 +42,7 @@ def main():
         "--worktree",
         action="store_true",
         default=False,
-        help="Run fixes in a git worktree; show diff at end and ask to merge or discard",
+        help="Run fixes in a git worktree. Each round is committed separately and ported as individual commits on merge. Shows diff at end and asks to merge or discard",
     )
     parser.add_argument(
         "--log",

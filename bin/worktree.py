@@ -3,8 +3,8 @@
 
 Subcommands:
     setup                          Create worktree, sync changes, commit baseline
-    commit <path>                  Commit fixes in the worktree
-    merge <path> <baseline_sha>    Apply only the fix diff to the original working directory
+    commit <path> [--message M]    Commit fixes in the worktree (per-round)
+    merge <path> <baseline_sha>    Apply per-round commits to the original working directory
     teardown <path> <branch>       Remove worktree and optionally delete branch
 """
 
@@ -75,8 +75,8 @@ def cmd_setup():
     )
 
 
-def cmd_commit(worktree_path):
-    """Commit review fixes in the worktree."""
+def cmd_commit(worktree_path, message="Peer review fixes"):
+    """Commit review fixes in the worktree. Returns commit SHA on success."""
     _, add_err, add_rc = _run_git("-C", worktree_path, "add", "-A")
     if add_rc != 0:
         print(
@@ -85,7 +85,7 @@ def cmd_commit(worktree_path):
             )
         )
         sys.exit(0)
-    stdout, err, rc = _run_git("-C", worktree_path, "commit", "-m", "Peer review fixes")
+    stdout, err, rc = _run_git("-C", worktree_path, "commit", "-m", message)
     if rc != 0:
         # "nothing to commit" appears in stdout, not stderr
         if "nothing to commit" in stdout or "nothing to commit" in err:
@@ -95,64 +95,129 @@ def cmd_commit(worktree_path):
             json.dumps({"error": True, "message": f"Failed to commit: {err or stdout}"})
         )
         sys.exit(0)
-    print(json.dumps({"ok": True, "committed": True}))
+    sha, _, _ = _run_git("-C", worktree_path, "rev-parse", "HEAD")
+    print(json.dumps({"ok": True, "committed": True, "sha": sha}))
 
 
 def cmd_merge(worktree_path, baseline_sha):
-    """Apply only the fix changes (baseline..HEAD) to the original working directory.
+    """Apply per-round commits from the worktree to the original working directory.
 
-    Uses git diff + git apply instead of git merge to avoid conflicts
-    with untracked files in the original working directory.
+    Uses git format-patch + git am --3way to preserve individual round commits.
+    Stashes uncommitted changes before applying and restores them after.
     """
-    import tempfile
 
-    # Get the diff between baseline and current HEAD (only the fixes)
-    # Do NOT use _run_git here — it strips whitespace which corrupts patches
-    result = subprocess.run(
-        ["git", "-C", worktree_path, "diff", f"{baseline_sha}..HEAD"],
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        timeout=30,
+    # Check if there are any round commits to apply
+    count_str, _, rc = _run_git(
+        "-C", worktree_path, "rev-list", "--count", f"{baseline_sha}..HEAD"
     )
-    diff = result.stdout
-    rc = result.returncode
-    if rc != 0 or not diff.strip():
+    if rc != 0 or count_str == "0":
         print(
             json.dumps(
-                {"ok": True, "applied": False, "message": "No fix changes to apply"}
+                {"ok": True, "applied": False, "message": "No round commits to apply"}
             )
         )
         return
 
-    # Write patch to temp file to avoid stdin encoding issues
-    with tempfile.NamedTemporaryFile(
-        mode="w", suffix=".patch", delete=False, encoding="utf-8"
-    ) as f:
-        f.write(diff)
-        patch_path = f.name
+    # Record pre-merge HEAD for rollback
+    pre_merge_head, _, _ = _run_git("rev-parse", "HEAD")
 
-    try:
-        apply = subprocess.run(
-            ["git", "apply", patch_path],
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            timeout=30,
+    # Check if working directory is dirty and needs stashing
+    status_out, _, _ = _run_git("status", "--porcelain")
+    stashed = False
+    if status_out:
+        _, stash_err, stash_rc = _run_git(
+            "stash", "push", "--include-untracked", "-m", "peer-review: pre-merge stash"
         )
-        if apply.returncode != 0:
+        if stash_rc != 0:
             print(
                 json.dumps(
                     {
                         "error": True,
-                        "message": f"Failed to apply fixes: {apply.stderr.strip()}",
+                        "message": f"Failed to stash uncommitted changes: {stash_err}",
                     }
                 )
             )
             sys.exit(0)
-        print(json.dumps({"ok": True, "applied": True}))
+        stashed = True
+
+    # Generate patches — one per round commit
+    # Do NOT use _run_git here — it strips whitespace which corrupts patches
+    result = subprocess.run(
+        [
+            "git", "-C", worktree_path,
+            "format-patch", "--stdout", f"{baseline_sha}..HEAD",
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        timeout=60,
+    )
+    if result.returncode != 0 or not result.stdout.strip():
+        if stashed:
+            _run_git("stash", "pop", "--index")
+        print(
+            json.dumps(
+                {
+                    "error": True,
+                    "message": f"Failed to generate patches: {result.stderr.strip()}",
+                }
+            )
+        )
+        sys.exit(0)
+
+    # Write patches to temp file
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".patch", delete=False, encoding="utf-8"
+    ) as f:
+        f.write(result.stdout)
+        patch_path = f.name
+
+    try:
+        # Apply patches as individual commits
+        am = subprocess.run(
+            ["git", "am", "--3way", patch_path],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=60,
+        )
+        if am.returncode != 0:
+            # Rollback: abort the am and reset to pre-merge state
+            _run_git("am", "--abort")
+            _run_git("reset", "--soft", pre_merge_head)
+            if stashed:
+                _run_git("stash", "pop", "--index")
+            print(
+                json.dumps(
+                    {
+                        "error": True,
+                        "message": f"Failed to apply round commits: {am.stderr.strip()}",
+                        "pre_merge_head": pre_merge_head,
+                    }
+                )
+            )
+            sys.exit(0)
     finally:
         os.unlink(patch_path)
+
+    # Count how many commits were applied
+    applied_str, _, _ = _run_git("rev-list", "--count", f"{pre_merge_head}..HEAD")
+    commits_applied = int(applied_str) if applied_str.isdigit() else 0
+
+    # Restore stashed changes
+    stash_warning = ""
+    if stashed:
+        _, pop_err, pop_rc = _run_git("stash", "pop", "--index")
+        if pop_rc != 0:
+            stash_warning = (
+                f"Commits applied but stash pop failed: {pop_err}. "
+                "Run 'git stash pop' manually to restore your uncommitted changes."
+            )
+
+    out = {"ok": True, "applied": True, "commits_applied": commits_applied}
+    if stash_warning:
+        out["stash_warning"] = stash_warning
+    print(json.dumps(out))
 
 
 def cmd_teardown(worktree_path, branch_name, keep_branch=False):
@@ -173,9 +238,17 @@ def main():
         cmd_setup()
     elif cmd == "commit":
         if len(sys.argv) < 3:
-            print("Usage: worktree commit <worktree_path>", file=sys.stderr)
+            print(
+                "Usage: worktree commit <worktree_path> [--message MSG]",
+                file=sys.stderr,
+            )
             sys.exit(1)
-        cmd_commit(sys.argv[2])
+        message = "Peer review fixes"
+        if "--message" in sys.argv:
+            idx = sys.argv.index("--message")
+            if idx + 1 < len(sys.argv):
+                message = sys.argv[idx + 1]
+        cmd_commit(sys.argv[2], message=message)
     elif cmd == "merge":
         if len(sys.argv) < 4:
             print(

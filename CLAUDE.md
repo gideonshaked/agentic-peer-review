@@ -14,7 +14,7 @@ peer-review-cli --help         # show all subcommands
 peer-review-cli parse-args --help   # test argument parser
 peer-review-cli list-checks         # list available checks
 peer-review-cli detect-project      # test project detection
-echo '{"language":"Python","working_dir":"/tmp","instructions":"","focus":"","checks":["bugs","security"],"round_num":1,"total_rounds":1,"prior_fixes":"","skipped_findings":""}' | peer-review-cli render-prompt   # test prompt rendering
+peer-review-cli render-prompt --language Python --working-dir /tmp --checks bugs,security --round-num 1 --total-rounds 1   # test prompt rendering
 echo "hello" | peer-review-cli run-review claude           # test agent invocation
 peer-review-cli format-output round-header 1 3             # test round header
 peer-review-cli format-output round-header 3 5 --elapsed 720  # test with time estimate
@@ -27,17 +27,17 @@ The plugin follows a strict separation: the skill definition (`skills/peer-revie
 
 All scripts are accessed via the `peer-review-cli` entrypoint in `bin/`, which is automatically on PATH when the plugin is enabled. The entrypoint dispatches to subcommands.
 
-**Data flow:** `parse-args` → `format-output settings` → `detect-project` → `change-log init` → loop[ `format-output round-header` → `render-prompt` → `run-review` → Claude fixes → `change-log add-round` ] → `git-diff` → `change-log finalize` → `format-output summary`
+**Data flow:** `parse-args` → `format-output settings` → `detect-project` → `change-log init` → loop[ `format-output round-header` → `render-prompt` → `run-review` → Claude fixes → `change-log add-round` → `worktree commit` (if --worktree) ] → `git-diff` → `change-log finalize` → `format-output summary`
 
 - `bin/peer-review-cli` — Shell entrypoint. Uses `$CLAUDE_PLUGIN_ROOT` to find the project root, calls `uv run --project` to invoke `bin.cli`.
 - `bin/cli.py` — Subcommand dispatcher. Maps hyphenated subcommand names to Python modules.
 - `bin/parse_args.py` — CLI argument parsing. Returns JSON with `agent`, `max_rounds`, `instructions`, `focus`, `timeout`, `worktree`, `log`, `checks`, `all_checks`. Validates `--only` check names against available checks.
 - `bin/list_checks.py` — Scans `skills/peer-review/references/checks/` for `.md` files. Returns available check names. To add a check, drop a `.md` file in that directory.
 - `bin/detect_project.py` — Scans for project files (pyproject.toml, package.json, etc.) to determine language and framework. Returns JSON.
-- `bin/render_prompt.py` — Reads JSON from stdin, loads check descriptions, renders `bin/prompts/audit.j2` via Jinja2.
+- `bin/render_prompt.py` — Accepts CLI args (--language, --checks, etc.), loads check descriptions, renders `bin/prompts/audit.j2` via Jinja2. Multi-line values (prior fixes, skipped findings) are read from file paths to avoid shell escaping issues.
 - `bin/run_review.py` — Takes agent name and optional timeout as args, reads prompt from stdin, invokes the correct CLI. Claude and Codex receive the prompt via stdin; Gemini receives it as the `-p` argument value.
 - `bin/format_output.py` — All deterministic formatted output. Subcommands: `settings` (settings box), `round-header` (round header with optional time estimate), `summary` (final summary box). Uses box-drawing characters.
-- `bin/worktree.py` — Git worktree lifecycle. Subcommands: `setup` (creates timestamped worktree + branch), `commit`, `merge`, `teardown`.
+- `bin/worktree.py` — Git worktree lifecycle. Subcommands: `setup` (creates timestamped worktree + branch), `commit` (per-round, accepts `--message`), `merge` (applies per-round commits via format-patch/am, stashes/restores uncommitted changes), `teardown`.
 - `bin/change_log.py` — Structured JSON change log. Subcommands: `init`, `add-round`, `finalize`, `render-md`. JSON is the source of truth; `--log` markdown is derived from it.
 - `bin/git_diff.py` — Captures git diff between a base ref and the working tree. Returns JSON with full diff text, file list, and stats.
 - `bin/prompts/audit.j2` — Jinja2 template for the audit prompt sent to the review agent.

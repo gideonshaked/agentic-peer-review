@@ -4,9 +4,7 @@ description: "Iterative AI peer review that finds and fixes issues in your codeb
 argument-hint: "[-h/--help] [-V/--version] [--agent claude|codex|gemini] [--max-rounds N] [--focus <path>] [--only <checks>] [--timeout <seconds>] [--worktree] [--log <file>] [\"instructions\"]"
 allowed-tools:
   - "Bash(peer-review-cli:*)"
-  - "Bash(echo:*)"
   - "Bash(git:*)"
-  - "Bash(date:*)"
   - Read
   - Edit
   - Glob
@@ -64,8 +62,6 @@ Print the settings box output as your direct text response. Extract these values
 - worktree_path, branch_name, baseline_sha — worktree info (empty strings if --worktree not used)
 
 If --worktree is active, use working_dir (the worktree path) for all subsequent file reads and edits.
-
-The JSON includes "start_time" (unix epoch) — use it for elapsed time calculations in round headers.
 
 ### 2. Run the review-fix loop
 

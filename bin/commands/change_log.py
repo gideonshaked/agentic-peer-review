@@ -1,8 +1,4 @@
-#!/usr/bin/env python3
 """Manage the structured JSON change log for peer review sessions.
-
-The log file path is derived automatically from the working directory
-via session_log_path() — no need to pass it as an argument.
 
 Subcommands:
     init                           Create a new change log
@@ -14,17 +10,13 @@ Subcommands:
 """
 
 import argparse
-import hashlib
 import json
-import os
 import sys
 from datetime import datetime, timezone
 
-
-def session_log_path():
-    """Return the session log file path, derived from cwd."""
-    cwd_hash = hashlib.md5(os.getcwd().encode()).hexdigest()[:12]
-    return f"/tmp/peer-review-{cwd_hash}.json"
+from bin.lib.formatting import box
+from bin.lib.git import run_git
+from bin.lib.session import session_log_path
 
 
 def _load_log():
@@ -55,9 +47,6 @@ def cmd_init():
     args = parser.parse_args()
 
     path = session_log_path()
-
-    # Capture base commit SHA
-    from bin.git import run_git
 
     try:
         stdout, _, rc = run_git("rev-parse", "HEAD", timeout=10)
@@ -179,7 +168,6 @@ def cmd_finalize():
     parser.add_argument("--log", default="", help="Write markdown log to this path")
     args = parser.parse_args()
 
-    # Compute summary
     data = _load_log()
     data["meta"]["completed_at"] = datetime.now(timezone.utc).isoformat()
     data["summary"] = {
@@ -189,9 +177,6 @@ def cmd_finalize():
         "total_skipped": sum(len(r.get("skipped", [])) for r in data["rounds"]),
     }
     _save_log(data)
-
-    # Print summary box
-    from bin.format_output import box
 
     path = session_log_path()
     summary = data["summary"]
@@ -205,7 +190,6 @@ def cmd_finalize():
     ]
     print(box("Peer Review Complete", rows))
 
-    # Optionally render markdown log
     if args.log:
         cmd_render_md(args.log)
         print(f"Markdown log: {args.log}")
@@ -299,7 +283,6 @@ def main():
         sys.exit(1)
 
     cmd = sys.argv[1]
-    # Shift argv so argparse in subcommands sees the right args
     sys.argv = [f"change-log {cmd}"] + sys.argv[2:]
 
     if cmd == "init":

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Initialize a peer review session.
 
 Combines argument parsing, project detection, change log creation,
@@ -14,13 +13,15 @@ import json
 import os
 import shutil
 import sys
+import time
 from datetime import datetime, timezone
 from importlib.metadata import version
 
-from bin.change_log import _save_log
-from bin.format_output import cmd_settings
-from bin.list_checks import get_available_checks
-from bin.worktree import cmd_setup
+from bin.commands.change_log import _save_log
+from bin.commands.worktree import cmd_setup
+from bin.lib.checks import get_available_checks
+from bin.lib.formatting import render_settings_box
+from bin.lib.git import run_git
 
 # Map project files to (language, framework) pairs. First match wins.
 PROJECT_SIGNATURES = [
@@ -79,13 +80,11 @@ def _detect_language(working_dir):
     if not language:
         return language, framework
 
-    # package.json defaults to TypeScript; downgrade to JavaScript if no tsconfig
     if language == "TypeScript" and not os.path.exists(
         os.path.join(working_dir, "tsconfig.json")
     ):
         language = "JavaScript"
 
-    # Try to detect framework from dependency files
     hints = FRAMEWORK_HINTS.get(language, {})
     if hints:
         dep_content = ""
@@ -113,17 +112,6 @@ def _detect_language(working_dir):
                 break
 
     return language, framework
-
-
-def _capture_base_commit():
-    """Get the current HEAD commit SHA."""
-    from bin.git import run_git
-
-    try:
-        stdout, _, rc = run_git("rev-parse", "HEAD", timeout=10)
-        return stdout if rc == 0 else ""
-    except Exception:
-        return ""
 
 
 def main():
@@ -207,7 +195,6 @@ def main():
         print(json.dumps({"error": True, "message": "--max-rounds must be at least 1"}))
         sys.exit(0)
 
-    # Check if the chosen CLI is installed (claude is always available in-session)
     if args.agent != "claude":
         install_hints = {
             "codex": "Install Codex CLI: npm install -g @openai/codex",
@@ -224,7 +211,6 @@ def main():
             )
             sys.exit(0)
 
-    # Resolve checks
     if args.only:
         requested = [c.strip() for c in args.only.split(",")]
         invalid = [c for c in requested if c not in all_checks]
@@ -260,10 +246,15 @@ def main():
         "checks": active_checks,
         "all_checks": all_checks,
     }
-    cmd_settings(json.dumps(settings))
+    render_settings_box(json.dumps(settings))
 
     # Create session change log
-    base_commit = _capture_base_commit()
+    try:
+        stdout, _, rc = run_git("rev-parse", "HEAD", timeout=10)
+        base_commit = stdout if rc == 0 else ""
+    except Exception:
+        base_commit = ""
+
     log_data = {
         "meta": {
             "agent": args.agent,
@@ -289,7 +280,6 @@ def main():
     branch_name = ""
     baseline_sha = ""
     if args.worktree:
-        # cmd_setup prints JSON to stdout — capture it
         import io
         from contextlib import redirect_stdout
 
@@ -303,9 +293,6 @@ def main():
         worktree_path = wt_result["worktree_path"]
         branch_name = wt_result["branch_name"]
         baseline_sha = wt_result["baseline_sha"]
-
-    # Final result — everything Claude needs
-    import time
 
     result = {
         "error": False,

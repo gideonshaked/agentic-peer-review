@@ -1,13 +1,7 @@
-#!/usr/bin/env python3
 """Build the audit prompt and run an external AI agent to review the codebase.
 
 Prints the round header to stderr, builds the prompt from CLI args and
 the session change log, invokes the agent, and prints the review output.
-
-Usage:
-    run-review --agent claude --timeout 300 --language Python --working-dir /path \
-        --checks bugs,security --round-num 1 --total-rounds 3 \
-        [--framework django] [--instructions "..."] [--focus src/]
 """
 
 import argparse
@@ -22,11 +16,11 @@ from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader
 
-from bin.change_log import session_log_path
-from bin.format_output import cmd_round_header
-from bin.list_checks import load_check
+from bin.lib.checks import load_check
+from bin.lib.formatting import render_round_header
+from bin.lib.session import session_log_path
 
-PROMPTS_DIR = Path(__file__).parent / "prompts"
+PROMPTS_DIR = Path(__file__).parent.parent / "prompts"
 
 AGENT_COMMANDS = {
     "claude": ["claude", "-p", "--allowedTools", "Read Glob Grep"],
@@ -113,7 +107,7 @@ def _print_round_header(round_num, total_rounds):
 
     buf = io.StringIO()
     with redirect_stdout(buf):
-        cmd_round_header(round_num, total_rounds, elapsed)
+        render_round_header(round_num, total_rounds, elapsed)
     print(buf.getvalue(), file=sys.stderr, end="")
 
 
@@ -138,17 +132,14 @@ def main():
     parser.add_argument("--total-rounds", type=int, required=True)
     args = parser.parse_args()
 
-    # Print round header
     _print_round_header(args.round_num, args.total_rounds)
 
-    # Build prompt
     prompt = _render_prompt(args)
 
     if not prompt.strip():
         print("Error: empty prompt", file=sys.stderr)
         sys.exit(1)
 
-    # Invoke agent
     cmd = list(AGENT_COMMANDS[args.agent])
 
     if args.agent == "gemini":

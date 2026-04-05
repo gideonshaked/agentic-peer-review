@@ -15,7 +15,7 @@ import sys
 import tempfile
 from datetime import datetime, timezone
 
-from bin.git import run_git as _run_git
+from bin.lib.git import run_git as _run_git
 
 
 def cmd_setup():

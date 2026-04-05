@@ -29,18 +29,26 @@ All scripts are accessed via the `peer-review-cli` entrypoint in `bin/`, which i
 
 **Data flow:** `init` → loop[ `review-round` → Claude fixes → `change-log add-finding/add-fix/add-skip` → `worktree commit` (if --worktree) ] → `git-diff` → `finalize`
 
-- `bin/peer-review-cli` — Shell entrypoint. Uses `$CLAUDE_PLUGIN_ROOT` to find the project root, calls `uv run --project` to invoke `bin.cli`.
-- `bin/cli.py` — Subcommand dispatcher. Maps subcommand names to Python modules.
-- `bin/init.py` — Unified session initialization. Combines argument parsing, project detection, change log creation, and worktree setup into one command. Prints settings box + JSON.
-- `bin/list_checks.py` — Scans `skills/peer-review/references/checks/` for `.md` files. Returns available check names. To add a check, drop a `.md` file in that directory.
-- `bin/review_round.py` — Builds audit prompt, prints round header, and invokes the review agent. Reads prior fixes, skipped findings, and elapsed time from the session change log. Claude and Codex receive the prompt via stdin; Gemini via `-p` argument.
-- `bin/format_output.py` — Box-drawing output helpers (`box`, `simple_box`, `cmd_settings`, `cmd_round_header`). Used internally by init, review-round, and change-log finalize.
-- `bin/worktree.py` — Git worktree lifecycle. Subcommands: `setup` (creates timestamped worktree + branch), `commit` (per-round, accepts `--message`), `merge` (applies per-round commits via format-patch/am, stashes/restores uncommitted changes), `teardown`.
-- `bin/change_log.py` — Structured JSON change log + session path helper. Subcommands: `init`, `add-finding`, `add-fix`, `add-skip` (all take --round-num, auto-create rounds), `finalize` (prints summary box + optional markdown), `render-md`. All use CLI args. Log file path is derived automatically from cwd hash.
-- `bin/git.py` — Shared git helpers. `run_git()` used by worktree, init, change-log. Also provides `git-diff` subcommand (captures diff as JSON).
-- `bin/prompts/audit.j2` — Jinja2 template for the audit prompt sent to the review agent.
-- `skills/peer-review/references/checks/*.md` — Modular check definitions. Each file defines what a check looks for. Add/rename/edit files to modify available checks.
-- `skills/peer-review/SKILL.md` — Skill definition. Orchestrates the loop, presents findings, and decides which to fix. Must not contain deterministic logic — move it to bin/.
+**Commands** (`bin/commands/`):
+- `init.py` — Session initialization: parse args, detect project, create change log, setup worktree. Prints settings box + JSON.
+- `review_round.py` — Build audit prompt, print round header, invoke review agent. Reads prior context from session log.
+- `change_log.py` — Manage the JSON change log. Subcommands: `init`, `add-finding`, `add-fix`, `add-skip`, `finalize`, `render-md`.
+- `worktree.py` — Git worktree lifecycle. Subcommands: `setup`, `commit`, `merge`, `teardown`.
+- `git_diff.py` — Capture git diff as JSON.
+
+**Libraries** (`bin/lib/`):
+- `git.py` — Shared `run_git()` helper.
+- `formatting.py` — Box-drawing output (`box`, `simple_box`, `render_settings_box`, `render_round_header`).
+- `checks.py` — Check discovery and loading from `skills/peer-review/references/checks/*.md`.
+- `session.py` — `session_log_path()` — deterministic log path from cwd hash.
+
+**Other**:
+- `bin/peer-review-cli` — Shell entrypoint. Calls `uv run --project` to invoke `bin.cli`.
+- `bin/cli.py` — Subcommand dispatcher.
+- `bin/list_checks.py` — CLI wrapper for `lib/checks.py`.
+- `bin/prompts/audit.j2` — Jinja2 audit prompt template.
+- `skills/peer-review/references/checks/*.md` — Modular check definitions. Add a `.md` file to create a new check.
+- `skills/peer-review/SKILL.md` — Skill definition. Orchestrates the loop. No deterministic logic — that lives in bin/.
 
 ## Key Conventions
 

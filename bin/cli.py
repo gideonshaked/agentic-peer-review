@@ -5,24 +5,24 @@ Usage: peer-review-cli <subcommand> [args...]
 
 Subcommands:
     init             Initialize session (parse args, detect project, create log, setup worktree)
-    finalize         Finalize session (summary box, optional markdown log)
-    list-checks      List available checks
     review-round     Build audit prompt, print round header, run review agent
+    finalize         Finalize session (summary box, optional markdown log)
     change-log       Manage the JSON change log
     git-diff         Capture git diff as JSON
     worktree         Manage git worktrees (setup, commit, merge, teardown)
+    list-checks      List available checks
 """
 
 import sys
 
 
 SUBCOMMANDS = {
-    "init": "bin.init",
+    "init": "bin.commands.init",
+    "review-round": "bin.commands.review_round",
+    "change-log": "bin.commands.change_log",
+    "git-diff": "bin.commands.git_diff",
+    "worktree": "bin.commands.worktree",
     "list-checks": "bin.list_checks",
-    "review-round": "bin.review_round",
-    "change-log": "bin.change_log",
-    "git-diff": "bin.git",
-    "worktree": "bin.worktree",
 }
 
 
@@ -43,7 +43,7 @@ def main():
     # Shortcut: "finalize" → "change-log finalize"
     if cmd == "finalize":
         sys.argv = ["peer-review-cli finalize"] + sys.argv[2:]
-        from bin.change_log import cmd_finalize
+        from bin.commands.change_log import cmd_finalize
 
         cmd_finalize()
         sys.exit(0)

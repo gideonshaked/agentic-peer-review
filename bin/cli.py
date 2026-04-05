@@ -7,8 +7,7 @@ Subcommands:
     init             Initialize session (parse args, detect project, create log, setup worktree)
     finalize         Finalize session (summary box, optional markdown log)
     list-checks      List available checks
-    render-prompt    Render the audit prompt
-    run-review       Run the review agent (reads prompt from stdin)
+    review           Build audit prompt, print round header, run review agent
     format-output    Render formatted output (round-header)
     change-log       Manage the JSON change log
     git-diff         Capture git diff as JSON
@@ -21,8 +20,7 @@ import sys
 SUBCOMMANDS = {
     "init": "bin.init",
     "list-checks": "bin.list_checks",
-    "render-prompt": "bin.render_prompt",
-    "run-review": "bin.run_review",
+    "review": "bin.review",
     "format-output": "bin.format_output",
     "change-log": "bin.change_log",
     "git-diff": "bin.git_diff",

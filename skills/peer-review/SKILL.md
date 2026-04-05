@@ -71,11 +71,13 @@ The JSON includes "start_time" (unix epoch) — use it for elapsed time calculat
 
 For each round (1 through max_rounds):
 
-#### 2a. Build and execute the audit prompt
+#### 2a. Run the review agent
 
-Build the prompt and pipe it to the review agent in a single command. This also prints the round header (to stderr) automatically:
+Run the review for this round. This prints the round header, builds the audit prompt, and invokes the agent — all in one command:
 
-  peer-review-cli render-prompt \
+  peer-review-cli review \
+    --agent <agent> \
+    --timeout <timeout> \
     --language <language> \
     --working-dir <working_dir> \
     --checks <comma-separated checks> \
@@ -83,18 +85,9 @@ Build the prompt and pipe it to the review agent in a single command. This also 
     --total-rounds <M> \
     [--framework <framework>] \
     [--instructions "<instructions>"] \
-    [--focus "<focus>"] \
-    | peer-review-cli run-review <agent> <timeout>
+    [--focus "<focus>"]
 
-Arguments:
-- --language, --framework, --working-dir: from step 1 (working_dir is the worktree path if --worktree)
-- --instructions: from step 1 (may be "")
-- --focus: from step 1 (may be "")
-- --checks: comma-separated list of active check names from step 1
-- --round-num: current round (1-indexed)
-- --total-rounds: total number of rounds
-
-Prior fixes, skipped findings, elapsed time, and the round header are all handled automatically from the session change log.
+All values come from step 1. Prior fixes, skipped findings, elapsed time, and the round header are handled automatically from the session change log.
 
 Print the round header from stderr as your direct text response.
 

@@ -102,10 +102,26 @@ Get current time and calculate elapsed seconds since start. Print the round head
 
 Print the round header output as your direct text response.
 
-#### 5b. Build the audit prompt
+#### 5b. Build and execute the audit prompt
 
-Run the render script with the following arguments:
+IMPORTANT: render-prompt uses CLI arguments, NOT JSON on stdin. Do not pipe JSON to it. Pass all values as flags directly.
 
+Build the prompt and pipe it to the review agent in a single command:
+
+  peer-review-cli render-prompt \
+    --language <language> \
+    --working-dir <working_dir> \
+    --checks <comma-separated checks> \
+    --round-num <N> \
+    --total-rounds <M> \
+    [--framework <framework>] \
+    [--instructions "<instructions>"] \
+    [--focus "<focus>"] \
+    [--prior-fixes-file <path>] \
+    [--skipped-findings-file <path>] \
+    | peer-review-cli run-review <agent> <timeout>
+
+Arguments:
 - --language, --framework, --working-dir: from step 2 (or worktree path if --worktree)
 - --instructions: from step 1 (may be "")
 - --focus: from step 1 (may be "")
@@ -116,14 +132,6 @@ Run the render script with the following arguments:
 - --skipped-findings-file: path to a temp file containing skipped findings summary (omit if round 1)
 
 For prior_fixes and skipped_findings, write the multi-line text to temp files and pass the file paths. This avoids shell escaping issues with newlines and special characters.
-
-  peer-review-cli render-prompt --language Python --working-dir /path --checks bugs,security --round-num 1 --total-rounds 3 [--prior-fixes-file /tmp/fixes.txt] [--skipped-findings-file /tmp/skipped.txt]
-
-#### 5c. Execute the review agent
-
-Pipe the rendered prompt into the run_review script, passing the agent name and timeout as arguments.
-
-  peer-review-cli render-prompt <args...> | peer-review-cli run-review <agent> <timeout>
 
 If the command fails (non-zero exit, e.g. timeout), print the error and continue to the next round. Do not stop the loop — prior rounds may have produced useful fixes.
 

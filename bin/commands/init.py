@@ -171,6 +171,11 @@ def main():
         help=f"Comma-separated list of checks to run (default: all). Available: {', '.join(all_checks)}",
     )
     parser.add_argument(
+        "--skip",
+        default="",
+        help=f"Comma-separated list of checks to exclude. Available: {', '.join(all_checks)}",
+    )
+    parser.add_argument(
         "instructions",
         nargs="?",
         default="",
@@ -211,6 +216,14 @@ def main():
             )
             sys.exit(0)
 
+    if args.only and args.skip:
+        print(
+            json.dumps(
+                {"error": True, "message": "--only and --skip cannot be used together"}
+            )
+        )
+        sys.exit(0)
+
     if args.only:
         requested = [c.strip() for c in args.only.split(",")]
         invalid = [c for c in requested if c not in all_checks]
@@ -225,6 +238,20 @@ def main():
             )
             sys.exit(0)
         active_checks = requested
+    elif args.skip:
+        excluded = [c.strip() for c in args.skip.split(",")]
+        invalid = [c for c in excluded if c not in all_checks]
+        if invalid:
+            print(
+                json.dumps(
+                    {
+                        "error": True,
+                        "message": f"Unknown check(s): {', '.join(invalid)}. Available: {', '.join(all_checks)}",
+                    }
+                )
+            )
+            sys.exit(0)
+        active_checks = [c for c in all_checks if c not in excluded]
     else:
         active_checks = all_checks
 

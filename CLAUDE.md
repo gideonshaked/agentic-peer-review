@@ -11,6 +11,7 @@ A Claude Code plugin that provides `/peer-review` — an iterative code review c
 ```
 uv sync                        # install dependencies
 peer-review-cli --help         # show all subcommands
+peer-review-cli --version      # show version
 peer-review-cli parse-args --help   # test argument parser
 peer-review-cli list-checks         # list available checks
 peer-review-cli detect-project      # test project detection

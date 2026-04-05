@@ -6,7 +6,11 @@ via session_log_path() — no need to pass it as an argument.
 
 Subcommands:
     init                           Create a new change log
-    add-round                      Append a round's data (reads JSON from stdin)
+    start-round --round-num N      Start a new round
+    add-finding --id --file ...    Add a finding to the current round
+    add-fix --finding-id ...       Add a fix to the current round
+    add-skip --finding-id ...      Add a skipped finding to the current round
+    end-round                      Close the current round
     finalize                       Compute summary, set completed_at, print JSON
     render-md --output <path>      Render the finalized JSON as a markdown log file
 """
@@ -18,6 +22,20 @@ import sys
 from datetime import datetime, timezone
 
 from bin.session import session_log_path
+
+
+def _load_log():
+    """Load the session log."""
+    path = session_log_path()
+    with open(path, encoding="utf-8") as f:
+        return json.load(f)
+
+
+def _save_log(data):
+    """Save the session log."""
+    path = session_log_path()
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f)
 
 
 def cmd_init():
@@ -66,28 +84,132 @@ def cmd_init():
         },
         "rounds": [],
     }
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f)
+    _save_log(data)
     print(json.dumps({"log_file": path, "base_commit": base_commit}))
 
 
-def cmd_add_round():
-    """Append a round to the log. Reads round JSON from stdin."""
-    round_data = json.load(sys.stdin)
-    path = session_log_path()
-    with open(path, encoding="utf-8") as f:
-        data = json.load(f)
-    data["rounds"].append(round_data)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f)
+def cmd_start_round():
+    """Start a new round in the change log."""
+    parser = argparse.ArgumentParser(description="Start a new round")
+    parser.add_argument("--round-num", type=int, required=True)
+    args = parser.parse_args()
+
+    data = _load_log()
+    data["rounds"].append(
+        {
+            "round_num": args.round_num,
+            "findings": [],
+            "fixes": [],
+            "skipped": [],
+        }
+    )
+    _save_log(data)
     print(json.dumps({"ok": True}))
+
+
+def cmd_add_finding():
+    """Add a finding to the current round."""
+    parser = argparse.ArgumentParser(description="Add a finding")
+    parser.add_argument("--id", required=True)
+    parser.add_argument("--file", required=True)
+    parser.add_argument("--line", default="")
+    parser.add_argument("--severity", required=True)
+    parser.add_argument("--category", required=True)
+    parser.add_argument("--description", required=True)
+    args = parser.parse_args()
+
+    data = _load_log()
+    if not data["rounds"]:
+        print(
+            json.dumps(
+                {"error": True, "message": "No active round. Call start-round first."}
+            )
+        )
+        sys.exit(0)
+    data["rounds"][-1]["findings"].append(
+        {
+            "id": args.id,
+            "file": args.file,
+            "line": args.line,
+            "severity": args.severity,
+            "category": args.category,
+            "description": args.description,
+        }
+    )
+    _save_log(data)
+    print(json.dumps({"ok": True}))
+
+
+def cmd_add_fix():
+    """Add a fix to the current round."""
+    parser = argparse.ArgumentParser(description="Add a fix")
+    parser.add_argument("--finding-id", required=True)
+    parser.add_argument("--file", required=True)
+    parser.add_argument("--what-changed", required=True)
+    parser.add_argument("--why", required=True)
+    args = parser.parse_args()
+
+    data = _load_log()
+    if not data["rounds"]:
+        print(
+            json.dumps(
+                {"error": True, "message": "No active round. Call start-round first."}
+            )
+        )
+        sys.exit(0)
+    data["rounds"][-1]["fixes"].append(
+        {
+            "finding_id": args.finding_id,
+            "file": args.file,
+            "what_changed": args.what_changed,
+            "why": args.why,
+        }
+    )
+    _save_log(data)
+    print(json.dumps({"ok": True}))
+
+
+def cmd_add_skip():
+    """Add a skipped finding to the current round."""
+    parser = argparse.ArgumentParser(description="Add a skipped finding")
+    parser.add_argument("--finding-id", required=True)
+    parser.add_argument("--file", required=True)
+    parser.add_argument("--severity", required=True)
+    parser.add_argument("--reason", required=True)
+    args = parser.parse_args()
+
+    data = _load_log()
+    if not data["rounds"]:
+        print(
+            json.dumps(
+                {"error": True, "message": "No active round. Call start-round first."}
+            )
+        )
+        sys.exit(0)
+    data["rounds"][-1]["skipped"].append(
+        {
+            "finding_id": args.finding_id,
+            "file": args.file,
+            "severity": args.severity,
+            "reason": args.reason,
+        }
+    )
+    _save_log(data)
+    print(json.dumps({"ok": True}))
+
+
+def cmd_end_round():
+    """Close the current round."""
+    data = _load_log()
+    if not data["rounds"]:
+        print(json.dumps({"error": True, "message": "No active round."}))
+        sys.exit(0)
+    print(json.dumps({"ok": True, "round_num": data["rounds"][-1]["round_num"]}))
 
 
 def cmd_finalize():
     """Compute summary, set completed_at, print finalized JSON."""
-    path = session_log_path()
-    with open(path, encoding="utf-8") as f:
-        data = json.load(f)
+    data = _load_log()
     data["meta"]["completed_at"] = datetime.now(timezone.utc).isoformat()
     data["summary"] = {
         "rounds_completed": len(data["rounds"]),
@@ -95,16 +217,13 @@ def cmd_finalize():
         "total_fixes": sum(len(r.get("fixes", [])) for r in data["rounds"]),
         "total_skipped": sum(len(r.get("skipped", [])) for r in data["rounds"]),
     }
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f)
+    _save_log(data)
     print(json.dumps(data))
 
 
 def cmd_render_md(output_path):
     """Render the finalized JSON as a markdown file."""
-    path = session_log_path()
-    with open(path, encoding="utf-8") as f:
-        data = json.load(f)
+    data = _load_log()
 
     meta = data["meta"]
     lines = [
@@ -184,7 +303,7 @@ def cmd_render_md(output_path):
 def main():
     if len(sys.argv) < 2:
         print(
-            "Usage: change_log <init|add-round|finalize|render-md> [args]",
+            "Usage: change_log <init|start-round|add-finding|add-fix|add-skip|end-round|finalize|render-md> [args]",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -195,8 +314,16 @@ def main():
 
     if cmd == "init":
         cmd_init()
-    elif cmd == "add-round":
-        cmd_add_round()
+    elif cmd == "start-round":
+        cmd_start_round()
+    elif cmd == "add-finding":
+        cmd_add_finding()
+    elif cmd == "add-fix":
+        cmd_add_fix()
+    elif cmd == "add-skip":
+        cmd_add_skip()
+    elif cmd == "end-round":
+        cmd_end_round()
     elif cmd == "finalize":
         cmd_finalize()
     elif cmd == "render-md":

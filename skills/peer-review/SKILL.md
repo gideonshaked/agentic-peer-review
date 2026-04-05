@@ -147,19 +147,31 @@ If --worktree is active, all file paths for reads and edits must use the worktre
 
 After fixing, print a brief summary of what was fixed and what was skipped (with reasons for skipping).
 
-Keep a running log of all fixes made AND all findings intentionally skipped (with reasons) across rounds to feed into the next round's prompt.
+The change log tracks all fixes and skipped findings across rounds automatically — render-prompt reads them from the session log for subsequent rounds.
 
 #### 5f. Record round in change log
 
-After fixing, build a JSON object with the round's structured data and append it to the change log. Use a heredoc to pipe the JSON safely (handles newlines and special characters):
+Record the round's findings, fixes, and skipped items using individual commands. First start the round, then add each item, then end the round:
 
-  peer-review-cli change-log add-round <<'EOF'
-  {"round_num": N, "findings": [...], "fixes": [...], "skipped": [...]}
-  EOF
+  peer-review-cli change-log start-round --round-num N
 
-Each finding object has: id (format "rNfM" e.g. "r1f1"), file, line, severity, category, description.
-Each fix object has: finding_id, file, what_changed, why.
-Each skipped object has: finding_id, file, severity, reason.
+For each finding from the review agent:
+
+  peer-review-cli change-log add-finding --id rNfM --file <path> --line <line> --severity <level> --category <cat> --description "<text>"
+
+For each fix you made:
+
+  peer-review-cli change-log add-fix --finding-id rNfM --file <path> --what-changed "<text>" --why "<text>"
+
+For each finding you skipped:
+
+  peer-review-cli change-log add-skip --finding-id rNfM --file <path> --severity <level> --reason "<text>"
+
+Then close the round:
+
+  peer-review-cli change-log end-round
+
+Finding IDs use the format "rNfM" (e.g. "r1f1" for round 1, finding 1).
 
 #### 5g. Commit round fixes (if --worktree)
 

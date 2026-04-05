@@ -74,11 +74,11 @@ This returns a JSON object with "language", "framework", "working_dir", and "git
 
 ### 3. Initialize change log
 
-Initialize the change log by piping session metadata to the change_log script. This also captures the base commit SHA automatically:
+Initialize the change log. The log file path is derived automatically from the working directory — no need to track it. Pass session metadata as CLI args:
 
-  echo '{"agent":"...","max_rounds":...,"focus":"...","instructions":"...","worktree":...,"project":{...}}' | peer-review-cli change-log init
+  peer-review-cli change-log init --agent <agent> --max-rounds <N> --language <lang> --working-dir <dir> [--focus <path>] [--instructions "<text>"] [--worktree] [--framework <fw>]
 
-Extract "log_file" and "base_commit" from the result.
+Extract "base_commit" from the result.
 
 ### 4. Set up worktree (if --worktree)
 
@@ -117,8 +117,6 @@ Build the prompt and pipe it to the review agent in a single command:
     [--framework <framework>] \
     [--instructions "<instructions>"] \
     [--focus "<focus>"] \
-    [--prior-fixes "<prior fixes text>"] \
-    [--skipped-findings "<skipped findings text>"] \
     | peer-review-cli run-review <agent> <timeout>
 
 Arguments:
@@ -128,8 +126,8 @@ Arguments:
 - --checks: comma-separated list of active check names from step 1
 - --round-num: current round (1-indexed)
 - --total-rounds: total number of rounds
-- --prior-fixes: summary of fixes from prior rounds (omit if round 1)
-- --skipped-findings: summary of skipped findings from prior rounds (omit if round 1)
+
+Prior fixes and skipped findings are read automatically from the session change log — no need to pass them.
 
 If the command fails (non-zero exit, e.g. timeout), print the error and continue to the next round. Do not stop the loop — prior rounds may have produced useful fixes.
 
@@ -157,9 +155,11 @@ Keep a running log of all fixes made AND all findings intentionally skipped (wit
 
 #### 5f. Record round in change log
 
-After fixing, build a JSON object with the round's structured data and append it to the change log:
+After fixing, build a JSON object with the round's structured data and append it to the change log. Use a heredoc to pipe the JSON safely (handles newlines and special characters):
 
-  echo '{"round_num": N, "findings": [...], "fixes": [...], "skipped": [...]}' | peer-review-cli change-log add-round <log_file>
+  peer-review-cli change-log add-round <<'EOF'
+  {"round_num": N, "findings": [...], "fixes": [...], "skipped": [...]}
+  EOF
 
 Each finding object has: id (format "rNfM" e.g. "r1f1"), file, line, severity, category, description.
 Each fix object has: finding_id, file, what_changed, why.
@@ -210,15 +210,15 @@ If the result contains a "stash_warning", print it to the user.
 
 Finalize the change log:
 
-  peer-review-cli change-log finalize <log_file>
+  peer-review-cli change-log finalize
 
 Then print the summary box as your direct text response:
 
-  peer-review-cli format-output summary <log_file>
+  peer-review-cli format-output summary
 
 If --log was specified, render the markdown log from the JSON:
 
-  peer-review-cli change-log render-md <log_file> --output <log_path>
+  peer-review-cli change-log render-md --output <log_path>
 
 ## Notes
 
@@ -232,5 +232,6 @@ If --log was specified, render the markdown log from the JSON:
 - Each round's fixes are committed separately in the worktree, then ported as individual commits via format-patch/am
 - Merging stashes uncommitted changes, applies per-round commits, then restores the stash
 - The --log file path is always relative to the original working directory
-- A structured JSON change log is always produced in a temp file, regardless of --log
+- A session change log is always produced at a deterministic path derived from the working directory
+- All commands that need the change log find it automatically — no need to pass file paths
 - Checks are defined in references/checks/ — add a .md file to create a new check

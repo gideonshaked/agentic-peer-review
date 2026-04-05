@@ -92,8 +92,11 @@ def cmd_round_header(round_num, total_rounds, elapsed=None):
     print(simple_box(text))
 
 
-def cmd_summary(log_file):
+def cmd_summary():
     """Render final summary box from finalized change log."""
+    from bin.session import session_log_path
+
+    log_file = session_log_path()
     with open(log_file, encoding="utf-8") as f:
         data = json.load(f)
 
@@ -140,10 +143,7 @@ def main():
                 elapsed = float(sys.argv[i + 1])
         cmd_round_header(round_num, total_rounds, elapsed)
     elif cmd == "summary":
-        if len(sys.argv) < 3:
-            print("Usage: format_output summary <log_file>", file=sys.stderr)
-            sys.exit(1)
-        cmd_summary(sys.argv[2])
+        cmd_summary()
     else:
         print(f"Unknown subcommand: {cmd}", file=sys.stderr)
         sys.exit(1)

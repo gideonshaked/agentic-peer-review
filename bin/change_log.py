@@ -1,32 +1,39 @@
 #!/usr/bin/env python3
 """Manage the structured JSON change log for peer review sessions.
 
+The log file path is derived automatically from the working directory
+via session_log_path() — no need to pass it as an argument.
+
 Subcommands:
-    init        Create a new change log temp file
-    add-round   Append a round's data to the log
-    finalize    Compute summary, set completed_at, print JSON
-    render-md   Render the finalized JSON as a markdown log file
+    init                           Create a new change log
+    add-round                      Append a round's data (reads JSON from stdin)
+    finalize                       Compute summary, set completed_at, print JSON
+    render-md --output <path>      Render the finalized JSON as a markdown log file
 """
 
+import argparse
 import json
-import os
 import subprocess
 import sys
-import tempfile
 from datetime import datetime, timezone
 
-
-def _log_path():
-    """Generate a unique temp file path."""
-    fd, path = tempfile.mkstemp(prefix="peer-review-", suffix=".json")
-    os.close(fd)
-    return path
+from bin.session import session_log_path
 
 
 def cmd_init():
-    """Create a new change log. Reads metadata JSON from stdin. Also captures base commit."""
-    meta = json.load(sys.stdin)
-    path = _log_path()
+    """Create a new change log from CLI arguments. Also captures base commit."""
+    parser = argparse.ArgumentParser(description="Initialize change log")
+    parser.add_argument("--agent", default="")
+    parser.add_argument("--max-rounds", type=int, default=0)
+    parser.add_argument("--focus", default="")
+    parser.add_argument("--instructions", default="")
+    parser.add_argument("--worktree", action="store_true", default=False)
+    parser.add_argument("--language", default="")
+    parser.add_argument("--framework", default="")
+    parser.add_argument("--working-dir", default="")
+    args = parser.parse_args()
+
+    path = session_log_path()
 
     # Capture base commit SHA
     try:
@@ -43,15 +50,19 @@ def cmd_init():
 
     data = {
         "meta": {
-            "agent": meta.get("agent", ""),
-            "max_rounds": meta.get("max_rounds", 0),
-            "focus": meta.get("focus", ""),
-            "instructions": meta.get("instructions", ""),
-            "worktree": meta.get("worktree", False),
+            "agent": args.agent,
+            "max_rounds": args.max_rounds,
+            "focus": args.focus,
+            "instructions": args.instructions,
+            "worktree": args.worktree,
             "started_at": datetime.now(timezone.utc).isoformat(),
             "completed_at": "",
             "base_commit": base_commit,
-            "project": meta.get("project", {}),
+            "project": {
+                "language": args.language,
+                "framework": args.framework,
+                "working_dir": args.working_dir,
+            },
         },
         "rounds": [],
     }
@@ -60,20 +71,22 @@ def cmd_init():
     print(json.dumps({"log_file": path, "base_commit": base_commit}))
 
 
-def cmd_add_round(log_file):
+def cmd_add_round():
     """Append a round to the log. Reads round JSON from stdin."""
     round_data = json.load(sys.stdin)
-    with open(log_file, encoding="utf-8") as f:
+    path = session_log_path()
+    with open(path, encoding="utf-8") as f:
         data = json.load(f)
     data["rounds"].append(round_data)
-    with open(log_file, "w", encoding="utf-8") as f:
+    with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f)
     print(json.dumps({"ok": True}))
 
 
-def cmd_finalize(log_file):
+def cmd_finalize():
     """Compute summary, set completed_at, print finalized JSON."""
-    with open(log_file, encoding="utf-8") as f:
+    path = session_log_path()
+    with open(path, encoding="utf-8") as f:
         data = json.load(f)
     data["meta"]["completed_at"] = datetime.now(timezone.utc).isoformat()
     data["summary"] = {
@@ -82,14 +95,15 @@ def cmd_finalize(log_file):
         "total_fixes": sum(len(r.get("fixes", [])) for r in data["rounds"]),
         "total_skipped": sum(len(r.get("skipped", [])) for r in data["rounds"]),
     }
-    with open(log_file, "w", encoding="utf-8") as f:
+    with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f)
     print(json.dumps(data))
 
 
-def cmd_render_md(log_file, output_path):
+def cmd_render_md(output_path):
     """Render the finalized JSON as a markdown file."""
-    with open(log_file, encoding="utf-8") as f:
+    path = session_log_path()
+    with open(path, encoding="utf-8") as f:
         data = json.load(f)
 
     meta = data["meta"]
@@ -176,25 +190,16 @@ def main():
         sys.exit(1)
 
     cmd = sys.argv[1]
+    # Shift argv so argparse in subcommands sees the right args
+    sys.argv = [f"change-log {cmd}"] + sys.argv[2:]
+
     if cmd == "init":
         cmd_init()
     elif cmd == "add-round":
-        if len(sys.argv) < 3:
-            print("Usage: change_log add-round <log_file>", file=sys.stderr)
-            sys.exit(1)
-        cmd_add_round(sys.argv[2])
+        cmd_add_round()
     elif cmd == "finalize":
-        if len(sys.argv) < 3:
-            print("Usage: change_log finalize <log_file>", file=sys.stderr)
-            sys.exit(1)
-        cmd_finalize(sys.argv[2])
+        cmd_finalize()
     elif cmd == "render-md":
-        if len(sys.argv) < 3:
-            print(
-                "Usage: change_log render-md <log_file> --output <path>",
-                file=sys.stderr,
-            )
-            sys.exit(1)
         output_path = ""
         for i, arg in enumerate(sys.argv):
             if arg == "--output" and i + 1 < len(sys.argv):
@@ -202,7 +207,7 @@ def main():
         if not output_path:
             print("--output <path> is required", file=sys.stderr)
             sys.exit(1)
-        cmd_render_md(sys.argv[2], output_path)
+        cmd_render_md(output_path)
     else:
         print(f"Unknown subcommand: {cmd}", file=sys.stderr)
         sys.exit(1)

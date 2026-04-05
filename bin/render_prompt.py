@@ -4,19 +4,60 @@
 Usage:
     render-prompt --language PY --working-dir /path --round-num 1 --total-rounds 3 \
         --checks bugs,security [--framework django] [--instructions "..."] \
-        [--focus src/] [--prior-fixes "..."] [--skipped-findings "..."]
+        [--focus src/]
 
-All values are passed as CLI arguments directly.
+Prior fixes and skipped findings are read automatically from the session
+change log — no need to pass them as arguments.
 """
 
 import argparse
+import json
+import os
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader
 
 from bin.list_checks import load_check
+from bin.session import session_log_path
 
 PROMPTS_DIR = Path(__file__).parent / "prompts"
+
+
+def _read_prior_context(round_num):
+    """Read prior fixes and skipped findings from the session change log."""
+    prior_fixes = ""
+    skipped_findings = ""
+
+    if round_num <= 1:
+        return prior_fixes, skipped_findings
+
+    log_path = session_log_path()
+    if not os.path.exists(log_path):
+        return prior_fixes, skipped_findings
+
+    with open(log_path, encoding="utf-8") as f:
+        data = json.load(f)
+
+    fix_lines = []
+    skip_lines = []
+    for rnd in data.get("rounds", []):
+        for fix in rnd.get("fixes", []):
+            fix_lines.append(
+                f"- [{fix.get('finding_id', '')}] {fix.get('file', '')}: "
+                f"{fix.get('what_changed', '')} ({fix.get('why', '')})"
+            )
+        for skip in rnd.get("skipped", []):
+            skip_lines.append(
+                f"- [{skip.get('finding_id', '')}] {skip.get('file', '')} "
+                f"({skip.get('severity', '')}): {skip.get('reason', '')}"
+            )
+
+    if fix_lines:
+        prior_fixes = "\n".join(fix_lines)
+    if skip_lines:
+        skipped_findings = "\n".join(skip_lines)
+
+    return prior_fixes, skipped_findings
 
 
 def main():
@@ -29,11 +70,9 @@ def main():
     parser.add_argument("--checks", required=True, help="Comma-separated check names")
     parser.add_argument("--round-num", type=int, required=True)
     parser.add_argument("--total-rounds", type=int, required=True)
-    parser.add_argument("--prior-fixes", default="", help="Prior fixes summary text")
-    parser.add_argument(
-        "--skipped-findings", default="", help="Skipped findings summary text"
-    )
     args = parser.parse_args()
+
+    prior_fixes, skipped_findings = _read_prior_context(args.round_num)
 
     check_names = [c.strip() for c in args.checks.split(",") if c.strip()]
     checks = [{"name": name, "description": load_check(name)} for name in check_names]
@@ -47,8 +86,8 @@ def main():
         "checks": checks,
         "round_num": args.round_num,
         "total_rounds": args.total_rounds,
-        "prior_fixes": args.prior_fixes,
-        "skipped_findings": args.skipped_findings,
+        "prior_fixes": prior_fixes,
+        "skipped_findings": skipped_findings,
     }
 
     env = Environment(loader=FileSystemLoader(PROMPTS_DIR), keep_trailing_newline=True)

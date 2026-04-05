@@ -35,11 +35,12 @@ All scripts are accessed via the `peer-review-cli` entrypoint in `bin/`, which i
 - `bin/parse_args.py` — CLI argument parsing. Returns JSON with `agent`, `max_rounds`, `instructions`, `focus`, `timeout`, `worktree`, `log`, `checks`, `all_checks`. Validates `--only` check names against available checks.
 - `bin/list_checks.py` — Scans `skills/peer-review/references/checks/` for `.md` files. Returns available check names. To add a check, drop a `.md` file in that directory.
 - `bin/detect_project.py` — Scans for project files (pyproject.toml, package.json, etc.) to determine language and framework. Returns JSON.
-- `bin/render_prompt.py` — Accepts CLI args (--language, --checks, --prior-fixes, etc.), loads check descriptions, renders `bin/prompts/audit.j2` via Jinja2.
+- `bin/session.py` — Session-scoped path helper. Derives a deterministic log file path from the working directory so all commands find the same file without passing paths around.
+- `bin/render_prompt.py` — Accepts CLI args (--language, --checks, etc.), loads check descriptions, renders `bin/prompts/audit.j2` via Jinja2. Reads prior fixes and skipped findings from the session change log automatically.
 - `bin/run_review.py` — Takes agent name and optional timeout as args, reads prompt from stdin, invokes the correct CLI. Claude and Codex receive the prompt via stdin; Gemini receives it as the `-p` argument value.
 - `bin/format_output.py` — All deterministic formatted output. Subcommands: `settings` (settings box), `round-header` (round header with optional time estimate), `summary` (final summary box). Uses box-drawing characters.
 - `bin/worktree.py` — Git worktree lifecycle. Subcommands: `setup` (creates timestamped worktree + branch), `commit` (per-round, accepts `--message`), `merge` (applies per-round commits via format-patch/am, stashes/restores uncommitted changes), `teardown`.
-- `bin/change_log.py` — Structured JSON change log. Subcommands: `init`, `add-round`, `finalize`, `render-md`. JSON is the source of truth; `--log` markdown is derived from it.
+- `bin/change_log.py` — Structured JSON change log. Subcommands: `init` (CLI args), `add-round` (stdin JSON via heredoc), `finalize`, `render-md`. Log file path is derived automatically from session. JSON is the source of truth; `--log` markdown is derived from it.
 - `bin/git_diff.py` — Captures git diff between a base ref and the working tree. Returns JSON with full diff text, file list, and stats.
 - `bin/prompts/audit.j2` — Jinja2 template for the audit prompt sent to the review agent.
 - `skills/peer-review/references/checks/*.md` — Modular check definitions. Each file defines what a check looks for. Add/rename/edit files to modify available checks.

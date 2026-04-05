@@ -142,8 +142,18 @@ def main():
 
     cmd = list(AGENT_COMMANDS[args.agent])
 
+    # Gemini takes the prompt via -p, but large prompts can exceed ARG_MAX.
+    # Write to a temp file and pass the path instead.
+    prompt_file = None
     if args.agent == "gemini":
-        cmd.append(prompt)
+        import tempfile
+
+        prompt_file = tempfile.NamedTemporaryFile(
+            mode="w", suffix=".txt", delete=False, encoding="utf-8"
+        )
+        prompt_file.write(prompt)
+        prompt_file.close()
+        cmd.append(prompt_file.name)
         stdin_data = None
     else:
         stdin_data = prompt
@@ -163,6 +173,9 @@ def main():
     except subprocess.TimeoutExpired:
         print(f"Error: {args.agent} timed out after {args.timeout}s", file=sys.stderr)
         sys.exit(1)
+    finally:
+        if prompt_file:
+            os.unlink(prompt_file.name)
 
     err = result.stderr.strip()
     if err:

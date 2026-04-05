@@ -216,8 +216,6 @@ def cmd_render_md(output_path):
     ]
     if meta.get("focus"):
         lines.append(f"- **Focus:** {meta['focus']}")
-    if meta.get("message"):
-        lines.append(f"- **Message:** {meta['message']}")
     lines.append("")
 
     for rnd in data.get("rounds", []):

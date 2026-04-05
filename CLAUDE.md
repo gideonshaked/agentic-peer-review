@@ -12,10 +12,8 @@ A Claude Code plugin that provides `/peer-review` — an iterative code review c
 uv sync                        # install dependencies
 peer-review-cli --help         # show all subcommands
 peer-review-cli --version      # show version
-peer-review-cli parse-args --help   # test argument parser
+peer-review-cli init --help    # test argument parser
 peer-review-cli review-round --language Python --working-dir /tmp --checks bugs,security --round-num 1 --total-rounds 1   # test review round (builds prompt + invokes agent)
-peer-review-cli format-output round-header 1 3             # test round header
-peer-review-cli format-output round-header 3 5 --elapsed 720  # test with time estimate
 peer-review-cli worktree setup                             # test worktree creation
 ```
 

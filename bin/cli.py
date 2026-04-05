@@ -23,11 +23,14 @@ SUBCOMMANDS = {
     "worktree": "bin.commands.worktree",
 }
 
+# finalize is a shortcut handled separately in main() — list it for --help
+ALL_COMMANDS = sorted(list(SUBCOMMANDS) + ["finalize"])
+
 
 def main():
     if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help"):
         print(__doc__.strip())
-        print(f"\nAvailable subcommands: {', '.join(sorted(SUBCOMMANDS))}")
+        print(f"\nAvailable subcommands: {', '.join(ALL_COMMANDS)}")
         sys.exit(0)
 
     if sys.argv[1] in ("-V", "--version"):

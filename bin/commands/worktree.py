@@ -175,9 +175,8 @@ def cmd_merge(worktree_path, baseline_sha):
             timeout=60,
         )
         if am.returncode != 0:
-            # Rollback: abort the am and reset to pre-merge state
+            # Rollback: am --abort resets HEAD to pre-am state
             _run_git("am", "--abort")
-            _run_git("reset", "--soft", pre_merge_head)
             if stashed:
                 _run_git("stash", "pop", "--index")
             print(

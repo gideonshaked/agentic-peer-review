@@ -137,6 +137,11 @@ def main():
         "checks": active_checks,
         "all_checks": all_checks,
     }
+
+    # Print settings box, then JSON on the last line
+    from bin.format_output import cmd_settings
+
+    cmd_settings(json.dumps(result))
     print(json.dumps(result))
 
 

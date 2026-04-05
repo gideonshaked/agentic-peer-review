@@ -54,13 +54,9 @@ Run the argument parser:
 
 If --help or --version was passed, this prints plain text (not JSON) and exits. Print the output to the user and stop.
 
-Otherwise, this returns a JSON object. If the "error" field is true, print the "message" to the user and stop.
+Otherwise, this prints the settings box followed by a JSON object on the last line. If the JSON "error" field is true, print the "message" to the user and stop.
 
-Otherwise, pass the JSON to the format_output script to display the settings box:
-
-  peer-review-cli format-output settings '<parse_args output>'
-
-Print the settings box output as your direct text response.
+Print the settings box output as your direct text response. Extract the settings from the JSON line.
 
 Record the start time using: date +%s
 

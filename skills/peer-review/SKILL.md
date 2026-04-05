@@ -19,16 +19,18 @@ effort: high
 
 Runs an external AI agent to audit the codebase, then fixes the findings in the current session. Repeats for the specified number of rounds.
 
-Usage: /peer-review [--agent claude|codex|gemini] [--max-rounds N] [--focus path] [--only checks] [--timeout seconds] [--worktree] [--log file] ["instructions"]
+Usage: /peer-review [-h/--help] [-V/--version] [--agent claude|codex|gemini] [--max-rounds N] [--focus <path>] [--only <checks>] [--timeout <seconds>] [--worktree] [--log <file>] ["instructions"]
 
-- --agent: which AI agent CLI to use for review (default: claude)
+- -h, --help: show help message and exit
+- -V, --version: show version number and exit
+- --agent: AI agent to use for review (default: claude)
 - --max-rounds: maximum review-fix cycles (default: 5). Stops early if no issues found.
-- --focus: narrow the review to a specific file or directory
+- --focus: narrow review scope to a specific file or directory path
 - --only: comma-separated list of checks to run (default: all). Available: architecture, bugs, dead-code, performance, security, tech-debt
-- --timeout: timeout in seconds for each agent invocation (default: 300)
-- --worktree: run all fixes in a git worktree. Each round is committed separately and ported as individual commits on merge. Shows diff at end and asks to merge or discard
-- --log: write findings and fix/skip decisions to the specified markdown file
-- instructions: optional quoted string with additional review instructions
+- --timeout: timeout in seconds for each review agent invocation (default: 300)
+- --worktree: run fixes in a git worktree. Each round is committed separately and ported as individual commits on merge. Shows diff at end and asks to merge or discard
+- --log: write findings and fix/skip decisions to the specified file
+- instructions: optional review instructions
 
 Examples:
   /peer-review
@@ -50,7 +52,9 @@ Run the argument parser:
 
   peer-review-cli parse-args $ARGUMENTS
 
-This returns a JSON object. If the "error" field is true, print the "message" to the user and stop.
+If --help or --version was passed, this prints plain text (not JSON) and exits. Print the output to the user and stop.
+
+Otherwise, this returns a JSON object. If the "error" field is true, print the "message" to the user and stop.
 
 Otherwise, pipe the JSON to the format_output script to display the settings box:
 

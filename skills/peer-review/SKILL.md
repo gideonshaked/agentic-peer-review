@@ -75,7 +75,7 @@ For each round (1 through max_rounds):
 
 Run the review for this round. This prints the round header, builds the audit prompt, and invokes the agent — all in one command:
 
-  peer-review-cli review \
+  peer-review-cli review-round \
     --agent <agent> \
     --timeout <timeout> \
     --language <language> \

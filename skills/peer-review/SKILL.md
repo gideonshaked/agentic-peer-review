@@ -65,7 +65,7 @@ Print the settings box output as your direct text response. Extract these values
 
 If --worktree is active, use working_dir (the worktree path) for all subsequent file reads and edits.
 
-Record the start time using: date +%s
+The JSON includes "start_time" (unix epoch) — use it for elapsed time calculations in round headers.
 
 ### 2. Run the review-fix loop
 
@@ -197,17 +197,11 @@ If the result contains a "stash_warning", print it to the user.
 
 ### 5. Final summary
 
-Finalize the change log:
+Finalize the session and print the summary box. If --log was specified, pass it to render the markdown log:
 
-  peer-review-cli change-log finalize
+  peer-review-cli finalize [--log <log_path>]
 
-Then print the summary box as your direct text response:
-
-  peer-review-cli format-output summary
-
-If --log was specified, render the markdown log from the JSON:
-
-  peer-review-cli change-log render-md --output <log_path>
+Print the summary box output as your direct text response.
 
 ## Notes
 

@@ -9,6 +9,7 @@ all values Claude needs for the session.
 """
 
 import argparse
+import glob
 import json
 import os
 import shutil
@@ -17,10 +18,101 @@ from datetime import datetime, timezone
 from importlib.metadata import version
 
 from bin.change_log import _save_log
-from bin.detect_project import detect_language
 from bin.format_output import cmd_settings
 from bin.list_checks import get_available_checks
 from bin.worktree import cmd_setup
+
+# Map project files to (language, framework) pairs. First match wins.
+PROJECT_SIGNATURES = [
+    ("package.json", "TypeScript", ""),
+    ("Cargo.toml", "Rust", ""),
+    ("go.mod", "Go", ""),
+    ("pyproject.toml", "Python", ""),
+    ("requirements.txt", "Python", ""),
+    ("Gemfile", "Ruby", ""),
+    ("pom.xml", "Java", ""),
+    ("build.gradle", "Java", ""),
+    ("*.csproj", "C#", ""),
+    ("mix.exs", "Elixir", ""),
+    ("composer.json", "PHP", ""),
+]
+
+FRAMEWORK_HINTS = {
+    "Python": {
+        "fastapi": "FastAPI",
+        "flask": "Flask",
+        "django": "Django",
+        "streamlit": "Streamlit",
+    },
+    "TypeScript": {
+        "react": "React",
+        "next": "Next.js",
+        "vue": "Vue",
+        "angular": "Angular",
+        "express": "Express",
+    },
+    "JavaScript": {
+        "react": "React",
+        "next": "Next.js",
+        "vue": "Vue",
+        "angular": "Angular",
+        "express": "Express",
+    },
+    "Ruby": {
+        "rails": "Rails",
+        "sinatra": "Sinatra",
+    },
+}
+
+
+def _detect_language(working_dir):
+    """Detect language and framework from project files."""
+    language = ""
+    framework = ""
+
+    for pattern, lang, fw in PROJECT_SIGNATURES:
+        if glob.glob(os.path.join(working_dir, pattern)):
+            language = lang
+            framework = fw
+            break
+
+    if not language:
+        return language, framework
+
+    # package.json defaults to TypeScript; downgrade to JavaScript if no tsconfig
+    if language == "TypeScript" and not os.path.exists(
+        os.path.join(working_dir, "tsconfig.json")
+    ):
+        language = "JavaScript"
+
+    # Try to detect framework from dependency files
+    hints = FRAMEWORK_HINTS.get(language, {})
+    if hints:
+        dep_content = ""
+        if language == "Python":
+            for f in ("pyproject.toml", "requirements.txt"):
+                path = os.path.join(working_dir, f)
+                if os.path.exists(path):
+                    with open(path, encoding="utf-8", errors="replace") as fh:
+                        dep_content = fh.read().lower()
+                    break
+        elif language in ("TypeScript", "JavaScript"):
+            path = os.path.join(working_dir, "package.json")
+            if os.path.exists(path):
+                with open(path, encoding="utf-8", errors="replace") as fh:
+                    dep_content = fh.read().lower()
+        elif language == "Ruby":
+            path = os.path.join(working_dir, "Gemfile")
+            if os.path.exists(path):
+                with open(path, encoding="utf-8", errors="replace") as fh:
+                    dep_content = fh.read().lower()
+
+        for key, fw_name in hints.items():
+            if key in dep_content:
+                framework = fw_name
+                break
+
+    return language, framework
 
 
 def _capture_base_commit():
@@ -158,7 +250,7 @@ def main():
 
     # Detect project
     working_dir = os.getcwd()
-    language, framework = detect_language(working_dir)
+    language, framework = _detect_language(working_dir)
     language = language or "unknown"
 
     # Print settings box
@@ -219,6 +311,8 @@ def main():
         baseline_sha = wt_result["baseline_sha"]
 
     # Final result — everything Claude needs
+    import time
+
     result = {
         "error": False,
         "agent": args.agent,
@@ -237,6 +331,7 @@ def main():
         "worktree_path": worktree_path,
         "branch_name": branch_name,
         "baseline_sha": baseline_sha,
+        "start_time": int(time.time()),
     }
     print(json.dumps(result))
 

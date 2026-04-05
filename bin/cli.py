@@ -5,12 +5,11 @@ Usage: peer-review-cli <subcommand> [args...]
 
 Subcommands:
     init             Initialize session (parse args, detect project, create log, setup worktree)
-    parse-args       Parse skill arguments (standalone, used by init internally)
-    detect-project   Detect project language and framework
+    finalize         Finalize session (summary box, optional markdown log)
     list-checks      List available checks
     render-prompt    Render the audit prompt
     run-review       Run the review agent (reads prompt from stdin)
-    format-output    Render formatted output (settings, round-header, summary)
+    format-output    Render formatted output (round-header)
     change-log       Manage the JSON change log
     git-diff         Capture git diff as JSON
     worktree         Manage git worktrees (setup, commit, merge, teardown)
@@ -21,8 +20,6 @@ import sys
 
 SUBCOMMANDS = {
     "init": "bin.init",
-    "parse-args": "bin.parse_args",
-    "detect-project": "bin.detect_project",
     "list-checks": "bin.list_checks",
     "render-prompt": "bin.render_prompt",
     "run-review": "bin.run_review",
@@ -46,6 +43,15 @@ def main():
         sys.exit(0)
 
     cmd = sys.argv[1]
+
+    # Shortcut: "finalize" → "change-log finalize"
+    if cmd == "finalize":
+        sys.argv = ["peer-review-cli finalize"] + sys.argv[2:]
+        from bin.change_log import cmd_finalize
+
+        cmd_finalize()
+        sys.exit(0)
+
     if cmd not in SUBCOMMANDS:
         print(f"Unknown subcommand: {cmd}", file=sys.stderr)
         print(f"Available: {', '.join(sorted(SUBCOMMANDS))}", file=sys.stderr)

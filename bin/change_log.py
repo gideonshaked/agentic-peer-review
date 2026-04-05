@@ -16,12 +16,18 @@ Subcommands:
 """
 
 import argparse
+import hashlib
 import json
+import os
 import subprocess
 import sys
 from datetime import datetime, timezone
 
-from bin.session import session_log_path
+
+def session_log_path():
+    """Return the session log file path, derived from cwd."""
+    cwd_hash = hashlib.md5(os.getcwd().encode()).hexdigest()[:12]
+    return f"/tmp/peer-review-{cwd_hash}.json"
 
 
 def _load_log():
@@ -208,7 +214,12 @@ def cmd_end_round():
 
 
 def cmd_finalize():
-    """Compute summary, set completed_at, print finalized JSON."""
+    """Finalize the session: compute summary, print summary box, optionally render markdown."""
+    parser = argparse.ArgumentParser(description="Finalize the session")
+    parser.add_argument("--log", default="", help="Write markdown log to this path")
+    args = parser.parse_args()
+
+    # Compute summary
     data = _load_log()
     data["meta"]["completed_at"] = datetime.now(timezone.utc).isoformat()
     data["summary"] = {
@@ -218,7 +229,26 @@ def cmd_finalize():
         "total_skipped": sum(len(r.get("skipped", [])) for r in data["rounds"]),
     }
     _save_log(data)
-    print(json.dumps(data))
+
+    # Print summary box
+    from bin.format_output import box
+
+    path = session_log_path()
+    summary = data["summary"]
+    rows = [
+        f"Rounds completed:  {summary.get('rounds_completed', 0)}",
+        f"Total findings:    {summary.get('total_findings', 0)}",
+        f"Total fixes:       {summary.get('total_fixes', 0)}",
+        f"Total skipped:     {summary.get('total_skipped', 0)}",
+        "",
+        f"JSON log: {path}",
+    ]
+    print(box("Peer Review Complete", rows))
+
+    # Optionally render markdown log
+    if args.log:
+        cmd_render_md(args.log)
+        print(f"Markdown log: {args.log}")
 
 
 def cmd_render_md(output_path):

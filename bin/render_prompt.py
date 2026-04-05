@@ -18,7 +18,7 @@ from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
 
 from bin.list_checks import load_check
-from bin.session import session_log_path
+from bin.change_log import session_log_path
 
 PROMPTS_DIR = Path(__file__).parent / "prompts"
 

@@ -4,7 +4,6 @@
 Subcommands:
     settings <json>              Render the settings box
     round-header <N> <M>         Render round header (optional --elapsed <sec>)
-    summary <log_file>           Render final summary box
 """
 
 import json
@@ -92,31 +91,10 @@ def cmd_round_header(round_num, total_rounds, elapsed=None):
     print(simple_box(text))
 
 
-def cmd_summary():
-    """Render final summary box from finalized change log."""
-    from bin.session import session_log_path
-
-    log_file = session_log_path()
-    with open(log_file, encoding="utf-8") as f:
-        data = json.load(f)
-
-    summary = data.get("summary", {})
-    rows = [
-        f"Rounds completed:  {summary.get('rounds_completed', 0)}",
-        f"Total findings:    {summary.get('total_findings', 0)}",
-        f"Total fixes:       {summary.get('total_fixes', 0)}",
-        f"Total skipped:     {summary.get('total_skipped', 0)}",
-        "",
-        f"JSON log: {log_file}",
-    ]
-
-    print(box("Peer Review Complete", rows))
-
-
 def main():
     if len(sys.argv) < 2:
         print(
-            "Usage: format_output <settings|round-header|summary> [args]",
+            "Usage: format_output <settings|round-header> [args]",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -142,8 +120,6 @@ def main():
             if arg == "--elapsed" and i + 1 < len(sys.argv):
                 elapsed = float(sys.argv[i + 1])
         cmd_round_header(round_num, total_rounds, elapsed)
-    elif cmd == "summary":
-        cmd_summary()
     else:
         print(f"Unknown subcommand: {cmd}", file=sys.stderr)
         sys.exit(1)

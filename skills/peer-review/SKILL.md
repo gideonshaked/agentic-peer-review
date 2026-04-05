@@ -121,7 +121,7 @@ Pipe the rendered prompt into the run_review script, passing the agent name and 
 
   peer-review-cli render-prompt <args...> | peer-review-cli run-review <agent> <timeout>
 
-If the command fails (non-zero exit), print the error and stop the loop.
+If the command fails (non-zero exit, e.g. timeout), print the error and continue to the next round. Do not stop the loop — prior rounds may have produced useful fixes.
 
 #### 5d. Present findings
 

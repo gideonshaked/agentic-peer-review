@@ -101,33 +101,35 @@ To see all available options, in Claude Code run:
 ```
 
 ```
-usage: peer-review [-h] [--agent {claude,codex,gemini}]                                                                                
-                   [--max-rounds MAX_ROUNDS] [--focus FOCUS]                                                                           
-                   [--timeout TIMEOUT] [--worktree] [--log LOG] [--only ONLY]                                                          
-                   [instructions]                                                                                                      
-                                                                                                                                         
-  Iterative AI peer review that finds and fixes issues in your codebase                                                                  
-                                                                                                                                         
-  positional arguments:                                                                                                               
+usage: peer-review [-h] [-V] [--agent {claude,codex,gemini}]
+                   [--max-rounds MAX_ROUNDS] [--focus FOCUS]
+                   [--timeout TIMEOUT] [--worktree] [--log LOG] [--only ONLY]
+                   [instructions]
+
+  Iterative AI peer review that finds and fixes issues in your codebase
+
+  positional arguments:
     instructions          Optional review instructions
 
   options:
     -h, --help            show this help message and exit
-    --agent {claude,codex,gemini}                                                                                                        
-                          AI agent to use for review (default: claude)                                                                   
-    --max-rounds MAX_ROUNDS                                                                                                              
-                          Maximum review-fix cycles (default: 5). Stops early if                                                         
-                          no issues found.                                                                                               
-    --focus FOCUS         Narrow review scope to a specific file or directory                                                            
-                          path                                                                                                           
-    --timeout TIMEOUT     Timeout in seconds for each review agent invocation                                                            
-                          (default: 300)                                                                                                 
-    --worktree            Run fixes in a git worktree; show diff at end and ask                                                          
-                          to merge or discard                                                                                            
-    --log LOG             Write findings and fix/skip decisions to the specified                                                         
-                          file                                                                                                           
-    --only ONLY           Comma-separated list of checks to run (default: all).                                                          
-                          Available: architecture, bugs, dead-code, performance,                                                         
+    -V, --version         show program's version number and exit
+    --agent {claude,codex,gemini}
+                          AI agent to use for review (default: claude)
+    --max-rounds MAX_ROUNDS
+                          Maximum review-fix cycles (default: 5). Stops early if
+                          no issues found.
+    --focus FOCUS         Narrow review scope to a specific file or directory
+                          path
+    --timeout TIMEOUT     Timeout in seconds for each review agent invocation
+                          (default: 300)
+    --worktree            Run fixes in a git worktree. Each round is committed
+                          separately and ported as individual commits on merge.
+                          Shows diff at end and asks to merge or discard
+    --log LOG             Write findings and fix/skip decisions to the specified
+                          file
+    --only ONLY           Comma-separated list of checks to run (default: all).
+                          Available: architecture, bugs, dead-code, performance,
                           security, tech-debt
 ```
 
@@ -136,12 +138,13 @@ usage: peer-review [-h] [--agent {claude,codex,gemini}]
 | Flag | Description |
 |------|-------------|
 | `-h`, `--help` | Show help message and exit |
+| `-V`, `--version` | Show version number and exit |
 | `--agent` | Review agent: `claude` (default), `codex`, or `gemini` |
-| `--max-rounds` | Maximum review-that finds and fixes issues (default: 5). Stops early if no issues found. |
+| `--max-rounds` | Maximum review-fix cycles (default: 5). Stops early if no issues found. |
 | `--focus <file or dir>` | Narrow the review to a specific file or directory |
 | `--only <check,check,...>` | Only run specific checks. See [checks](#checks) below. |
 | `--timeout` | Timeout per agent invocation in seconds (default: 300) |
-| `--worktree` | Run all fixes in an isolated git worktree. Shows diff at end and asks to merge. |
+| `--worktree` | Run all fixes in an isolated git worktree. Each round is committed separately and ported as individual commits on merge. |
 | `--log` | Write a structured review log to the specified file |
 | `instructions` | Give the reviewer agent specific instructions on what to focus on, what to skip, etc. |
 

@@ -12,7 +12,6 @@ skipped_findings) are read from files to avoid shell escaping issues.
 """
 
 import argparse
-import sys
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader

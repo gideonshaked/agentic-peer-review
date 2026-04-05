@@ -37,6 +37,12 @@ def main():
         print(f"\nAvailable subcommands: {', '.join(sorted(SUBCOMMANDS))}")
         sys.exit(0)
 
+    if sys.argv[1] in ("-V", "--version"):
+        from importlib.metadata import version
+
+        print(version("agentic-peer-review"))
+        sys.exit(0)
+
     cmd = sys.argv[1]
     if cmd not in SUBCOMMANDS:
         print(f"Unknown subcommand: {cmd}", file=sys.stderr)

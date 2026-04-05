@@ -7,7 +7,7 @@ A Claude Code plugin that peer-reviews your code with AI agents. `agentic-peer-r
 Open Claude Code and paste the following:
 
 ```
-/plugin marketplace add gideonshaked/agentic-peer-review@v1.1.0
+/plugin marketplace add gideonshaked/agentic-peer-review@v1.1.1
 ```
 
 ```
@@ -33,14 +33,14 @@ Then run peer review on the current workspace:
 From the terminal:
 
 ```bash
-claude plugin marketplace add gideonshaked/agentic-peer-review@v1.1.0
+claude plugin marketplace add gideonshaked/agentic-peer-review@v1.1.1
 claude plugin install agentic-peer-review@agentic-peer-review
 ```
 
 Or from inside Claude Code:
 
 ```
-/plugin marketplace add gideonshaked/agentic-peer-review@v1.1.0
+/plugin marketplace add gideonshaked/agentic-peer-review@v1.1.1
 ```
 
 ```

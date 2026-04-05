@@ -1,7 +1,7 @@
 ---
 name: peer-review
 description: "Iterative AI peer review that finds and fixes issues in your codebase. TRIGGER when: user asks for a code review, second opinion, or audit; user says 'review this', 'check my code', 'peer review'; after completing a large feature or refactor."
-argument-hint: "[-V/--version] [--agent claude|codex|gemini] [--max-rounds N] [--focus <path>] [--only <checks>] [--timeout <seconds>] [--worktree] [--log <file>] [\"instructions\"]"
+argument-hint: "[-h/--help] [-V/--version] [--agent claude|codex|gemini] [--max-rounds N] [--focus <path>] [--only <checks>] [--timeout <seconds>] [--worktree] [--log <file>] [\"instructions\"]"
 allowed-tools:
   - "Bash(peer-review-cli:*)"
   - "Bash(echo:*)"

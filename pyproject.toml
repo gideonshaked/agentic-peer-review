@@ -1,6 +1,6 @@
 [project]
 name = "agentic-peer-review"
-version = "1.0.0"
+version = "1.1.0"
 description = "Iterative AI peer review that finds and fixes issues in your codebase"
 requires-python = ">=3.10"
 dependencies = ["jinja2"]

@@ -10,7 +10,6 @@ Subcommands:
     change-log       Manage the JSON change log
     git-diff         Capture git diff as JSON
     worktree         Manage git worktrees (setup, commit, merge, teardown)
-    list-checks      List available checks
 """
 
 import sys
@@ -22,7 +21,6 @@ SUBCOMMANDS = {
     "change-log": "bin.commands.change_log",
     "git-diff": "bin.commands.git_diff",
     "worktree": "bin.commands.worktree",
-    "list-checks": "bin.list_checks",
 }
 
 

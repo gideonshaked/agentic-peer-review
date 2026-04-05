@@ -13,8 +13,6 @@ uv sync                        # install dependencies
 peer-review-cli --help         # show all subcommands
 peer-review-cli --version      # show version
 peer-review-cli parse-args --help   # test argument parser
-peer-review-cli list-checks         # list available checks
-peer-review-cli detect-project      # test project detection
 peer-review-cli review-round --language Python --working-dir /tmp --checks bugs,security --round-num 1 --total-rounds 1   # test review round (builds prompt + invokes agent)
 peer-review-cli format-output round-header 1 3             # test round header
 peer-review-cli format-output round-header 3 5 --elapsed 720  # test with time estimate
@@ -45,7 +43,6 @@ All scripts are accessed via the `peer-review-cli` entrypoint in `bin/`, which i
 **Other**:
 - `bin/peer-review-cli` — Shell entrypoint. Calls `uv run --project` to invoke `bin.cli`.
 - `bin/cli.py` — Subcommand dispatcher.
-- `bin/list_checks.py` — CLI wrapper for `lib/checks.py`.
 - `bin/prompts/audit.j2` — Jinja2 audit prompt template.
 - `skills/peer-review/references/checks/*.md` — Modular check definitions. Add a `.md` file to create a new check.
 - `skills/peer-review/SKILL.md` — Skill definition. Orchestrates the loop. No deterministic logic — that lives in bin/.

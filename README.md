@@ -104,6 +104,7 @@ To see all available options, in Claude Code run:
 usage: peer-review [-h] [-V] [--agent {claude,codex,gemini}]
                    [--max-rounds MAX_ROUNDS] [--focus FOCUS]
                    [--timeout TIMEOUT] [--worktree] [--log LOG] [--only ONLY]
+                   [--skip SKIP]
                    [instructions]
 
   Iterative AI peer review that finds and fixes issues in your codebase
@@ -131,6 +132,9 @@ usage: peer-review [-h] [-V] [--agent {claude,codex,gemini}]
     --only ONLY           Comma-separated list of checks to run (default: all).
                           Available: architecture, bugs, dead-code, performance,
                           security, tech-debt
+    --skip SKIP           Comma-separated list of checks to exclude. Available:
+                          architecture, bugs, dead-code, performance, security,
+                          tech-debt
 ```
 
 ### Options
@@ -143,6 +147,7 @@ usage: peer-review [-h] [-V] [--agent {claude,codex,gemini}]
 | `--max-rounds` | Maximum review-fix cycles (default: 5). Stops early if no issues found. |
 | `--focus <file or dir>` | Narrow the review to a specific file or directory |
 | `--only <check,check,...>` | Only run specific checks. See [checks](#checks) below. |
+| `--skip <check,check,...>` | Exclude specific checks. Cannot be used with `--only`. |
 | `--timeout` | Timeout per agent invocation in seconds (default: 300) |
 | `--worktree` | Run all fixes in an isolated git worktree. Each round is committed separately and ported as individual commits on merge. |
 | `--log` | Write a structured review log to the specified file |
@@ -150,7 +155,7 @@ usage: peer-review [-h] [-V] [--agent {claude,codex,gemini}]
 
 ### Checks
 
-By default all checks run. Use `--only` to select a subset:
+By default all checks run. Use `--only` to select a subset, or `--skip` to exclude specific checks:
 
 | Check | What it looks for |
 |-------|-------------------|

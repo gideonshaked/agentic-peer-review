@@ -6,6 +6,8 @@ import json
 import shutil
 import sys
 
+from importlib.metadata import version
+
 from bin.list_checks import get_available_checks
 
 
@@ -14,6 +16,12 @@ def main():
         prog="peer-review",
         description="Iterative AI peer review that finds and fixes issues in your codebase",
         exit_on_error=False,
+    )
+    parser.add_argument(
+        "-V",
+        "--version",
+        action="version",
+        version=version("agentic-peer-review"),
     )
     parser.add_argument(
         "--agent",

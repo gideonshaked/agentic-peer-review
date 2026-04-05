@@ -8,7 +8,6 @@ Subcommands:
     finalize         Finalize session (summary box, optional markdown log)
     list-checks      List available checks
     review-round     Build audit prompt, print round header, run review agent
-    format-output    Render formatted output (round-header)
     change-log       Manage the JSON change log
     git-diff         Capture git diff as JSON
     worktree         Manage git worktrees (setup, commit, merge, teardown)
@@ -21,9 +20,8 @@ SUBCOMMANDS = {
     "init": "bin.init",
     "list-checks": "bin.list_checks",
     "review-round": "bin.review_round",
-    "format-output": "bin.format_output",
     "change-log": "bin.change_log",
-    "git-diff": "bin.git_diff",
+    "git-diff": "bin.git",
     "worktree": "bin.worktree",
 }
 

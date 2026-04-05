@@ -17,7 +17,6 @@ import argparse
 import hashlib
 import json
 import os
-import subprocess
 import sys
 from datetime import datetime, timezone
 
@@ -58,15 +57,11 @@ def cmd_init():
     path = session_log_path()
 
     # Capture base commit SHA
+    from bin.git import run_git
+
     try:
-        result = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            timeout=10,
-        )
-        base_commit = result.stdout.strip() if result.returncode == 0 else ""
+        stdout, _, rc = run_git("rev-parse", "HEAD", timeout=10)
+        base_commit = stdout if rc == 0 else ""
     except Exception:
         base_commit = ""
 

@@ -1,13 +1,7 @@
 #!/usr/bin/env python3
-"""Render box-drawing formatted output for peer review sessions.
-
-Subcommands:
-    settings <json>              Render the settings box
-    round-header <N> <M>         Render round header (optional --elapsed <sec>)
-"""
+"""Box-drawing formatted output helpers for peer review sessions."""
 
 import json
-import sys
 
 
 def box(title, rows, width=None):
@@ -89,41 +83,3 @@ def cmd_round_header(round_num, total_rounds, elapsed=None):
             text += f" (est. {minutes:02d}:{seconds:02d} remaining)"
 
     print(simple_box(text))
-
-
-def main():
-    if len(sys.argv) < 2:
-        print(
-            "Usage: format_output <settings|round-header> [args]",
-            file=sys.stderr,
-        )
-        sys.exit(1)
-
-    cmd = sys.argv[1]
-    if cmd == "settings":
-        if len(sys.argv) < 3:
-            json_str = sys.stdin.read()
-        else:
-            json_str = sys.argv[2]
-        cmd_settings(json_str)
-    elif cmd == "round-header":
-        if len(sys.argv) < 4:
-            print(
-                "Usage: format_output round-header <N> <M> [--elapsed <sec>]",
-                file=sys.stderr,
-            )
-            sys.exit(1)
-        round_num = int(sys.argv[2])
-        total_rounds = int(sys.argv[3])
-        elapsed = None
-        for i, arg in enumerate(sys.argv):
-            if arg == "--elapsed" and i + 1 < len(sys.argv):
-                elapsed = float(sys.argv[i + 1])
-        cmd_round_header(round_num, total_rounds, elapsed)
-    else:
-        print(f"Unknown subcommand: {cmd}", file=sys.stderr)
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()

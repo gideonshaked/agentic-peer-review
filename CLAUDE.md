@@ -34,10 +34,10 @@ All scripts are accessed via the `peer-review-cli` entrypoint in `bin/`, which i
 - `bin/init.py` — Unified session initialization. Combines argument parsing, project detection, change log creation, and worktree setup into one command. Prints settings box + JSON.
 - `bin/list_checks.py` — Scans `skills/peer-review/references/checks/` for `.md` files. Returns available check names. To add a check, drop a `.md` file in that directory.
 - `bin/review_round.py` — Builds audit prompt, prints round header, and invokes the review agent. Reads prior fixes, skipped findings, and elapsed time from the session change log. Claude and Codex receive the prompt via stdin; Gemini via `-p` argument.
-- `bin/format_output.py` — Formatted output. Subcommands: `settings` (settings box), `round-header` (used internally by review-round). Uses box-drawing characters.
+- `bin/format_output.py` — Box-drawing output helpers (`box`, `simple_box`, `cmd_settings`, `cmd_round_header`). Used internally by init, review-round, and change-log finalize.
 - `bin/worktree.py` — Git worktree lifecycle. Subcommands: `setup` (creates timestamped worktree + branch), `commit` (per-round, accepts `--message`), `merge` (applies per-round commits via format-patch/am, stashes/restores uncommitted changes), `teardown`.
 - `bin/change_log.py` — Structured JSON change log + session path helper. Subcommands: `init`, `add-finding`, `add-fix`, `add-skip` (all take --round-num, auto-create rounds), `finalize` (prints summary box + optional markdown), `render-md`. All use CLI args. Log file path is derived automatically from cwd hash.
-- `bin/git_diff.py` — Captures git diff between a base ref and the working tree. Returns JSON with full diff text, file list, and stats.
+- `bin/git.py` — Shared git helpers. `run_git()` used by worktree, init, change-log. Also provides `git-diff` subcommand (captures diff as JSON).
 - `bin/prompts/audit.j2` — Jinja2 template for the audit prompt sent to the review agent.
 - `skills/peer-review/references/checks/*.md` — Modular check definitions. Each file defines what a check looks for. Add/rename/edit files to modify available checks.
 - `skills/peer-review/SKILL.md` — Skill definition. Orchestrates the loop, presents findings, and decides which to fix. Must not contain deterministic logic — move it to bin/.

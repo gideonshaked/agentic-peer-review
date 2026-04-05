@@ -117,17 +117,11 @@ def _detect_language(working_dir):
 
 def _capture_base_commit():
     """Get the current HEAD commit SHA."""
-    import subprocess
+    from bin.git import run_git
 
     try:
-        result = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            timeout=10,
-        )
-        return result.stdout.strip() if result.returncode == 0 else ""
+        stdout, _, rc = run_git("rev-parse", "HEAD", timeout=10)
+        return stdout if rc == 0 else ""
     except Exception:
         return ""
 

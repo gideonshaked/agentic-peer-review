@@ -4,13 +4,14 @@
 Usage: peer-review-cli <subcommand> [args...]
 
 Subcommands:
-    parse-args       Parse skill arguments
+    init             Initialize session (parse args, detect project, create log, setup worktree)
+    parse-args       Parse skill arguments (standalone, used by init internally)
     detect-project   Detect project language and framework
     list-checks      List available checks
-    render-prompt    Render the audit prompt (reads JSON from stdin)
+    render-prompt    Render the audit prompt
     run-review       Run the review agent (reads prompt from stdin)
     format-output    Render formatted output (settings, round-header, summary)
-    change-log       Manage the JSON change log (init, add-round, finalize, render-md)
+    change-log       Manage the JSON change log
     git-diff         Capture git diff as JSON
     worktree         Manage git worktrees (setup, commit, merge, teardown)
 """
@@ -19,6 +20,7 @@ import sys
 
 
 SUBCOMMANDS = {
+    "init": "bin.init",
     "parse-args": "bin.parse_args",
     "detect-project": "bin.detect_project",
     "list-checks": "bin.list_checks",

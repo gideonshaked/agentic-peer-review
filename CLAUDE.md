@@ -28,9 +28,10 @@ The plugin follows a strict separation: the skill definition (`skills/peer-revie
 
 All scripts are accessed via the `peer-review-cli` entrypoint in `bin/`, which is automatically on PATH when the plugin is enabled. The entrypoint dispatches to subcommands.
 
-**Data flow:** `parse-args` → `format-output settings` → `detect-project` → `change-log init` → loop[ `format-output round-header` → `render-prompt` → `run-review` → Claude fixes → `change-log add-round` → `worktree commit` (if --worktree) ] → `git-diff` → `change-log finalize` → `format-output summary`
+**Data flow:** `init` → loop[ `format-output round-header` → `render-prompt` → `run-review` → Claude fixes → `change-log start-round/add-finding/add-fix/add-skip/end-round` → `worktree commit` (if --worktree) ] → `git-diff` → `change-log finalize` → `format-output summary`
 
 - `bin/peer-review-cli` — Shell entrypoint. Uses `$CLAUDE_PLUGIN_ROOT` to find the project root, calls `uv run --project` to invoke `bin.cli`.
+- `bin/init.py` — Unified session initialization. Combines argument parsing, project detection, change log creation, and worktree setup into one command. Prints settings box + JSON.
 - `bin/cli.py` — Subcommand dispatcher. Maps hyphenated subcommand names to Python modules.
 - `bin/parse_args.py` — CLI argument parsing. Returns JSON with `agent`, `max_rounds`, `instructions`, `focus`, `timeout`, `worktree`, `log`, `checks`, `all_checks`. Validates `--only` check names against available checks.
 - `bin/list_checks.py` — Scans `skills/peer-review/references/checks/` for `.md` files. Returns available check names. To add a check, drop a `.md` file in that directory.

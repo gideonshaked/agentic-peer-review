@@ -46,51 +46,32 @@ CRITICAL: All script output (settings box, round headers, findings, diffs, summa
 
 ## Instructions
 
-### 1. Parse arguments and display settings
+### 1. Initialize session
 
-Run the argument parser:
+Run the init command with the user's arguments:
 
-  peer-review-cli parse-args $ARGUMENTS
+  peer-review-cli init $ARGUMENTS
 
 If --help or --version was passed, this prints plain text (not JSON) and exits. Print the output to the user and stop.
 
 Otherwise, this prints the settings box followed by a JSON object on the last line. If the JSON "error" field is true, print the "message" to the user and stop.
 
-Print the settings box output as your direct text response. Extract the settings from the JSON line.
+Print the settings box output as your direct text response. Extract these values from the JSON line:
+
+- agent, max_rounds, checks, instructions, focus, timeout, log — session settings
+- language, framework, working_dir — project context (working_dir is the worktree path if --worktree)
+- base_commit — for diffing later
+- worktree_path, branch_name, baseline_sha — worktree info (empty strings if --worktree not used)
+
+If --worktree is active, use working_dir (the worktree path) for all subsequent file reads and edits.
 
 Record the start time using: date +%s
 
-### 2. Gather project context
-
-Run the project detection script:
-
-  peer-review-cli detect-project
-
-This returns a JSON object with "language", "framework", "working_dir", and "git_status".
-
-### 3. Initialize change log
-
-Initialize the change log. The log file path is derived automatically from the working directory — no need to track it. Pass session metadata as CLI args:
-
-  peer-review-cli change-log init --agent <agent> --max-rounds <N> --language <lang> --working-dir <dir> [--focus <path>] [--instructions "<text>"] [--worktree] [--framework <fw>]
-
-Extract "base_commit" from the result.
-
-### 4. Set up worktree (if --worktree)
-
-If the "worktree" flag is true, run:
-
-  peer-review-cli worktree setup
-
-This creates a timestamped worktree, syncs uncommitted and untracked files, and commits a baseline. Extract "worktree_path", "branch_name", and "baseline_sha" from the result. Use the worktree path as the working directory for all subsequent file reads and edits. Remember the original working directory and baseline_sha for later.
-
-If the "worktree" flag is false, skip this step.
-
-### 5. Run the review-fix loop
+### 2. Run the review-fix loop
 
 For each round (1 through max_rounds):
 
-#### 5a. Print round header
+#### 2a. Print round header
 
 Get current time and calculate elapsed seconds since start. Print the round header:
 
@@ -98,7 +79,7 @@ Get current time and calculate elapsed seconds since start. Print the round head
 
 Print the round header output as your direct text response.
 
-#### 5b. Build and execute the audit prompt
+#### 2b. Build and execute the audit prompt
 
 IMPORTANT: render-prompt uses CLI arguments, NOT JSON on stdin. Do not pipe JSON to it. Pass all values as flags directly.
 
@@ -127,13 +108,13 @@ Prior fixes and skipped findings are read automatically from the session change 
 
 If the command fails (non-zero exit, e.g. timeout), print the error and continue to the next round. Do not stop the loop — prior rounds may have produced useful fixes.
 
-#### 5d. Present findings
+#### 2c. Present findings
 
 Print the raw findings from the agent as your direct text response. Do not soften, filter, or editorialize.
 
 If the agent returned no findings or explicitly said no issues were found, print "No issues found — review complete." and stop the loop early.
 
-#### 5e. Fix the findings
+#### 2d. Fix the findings
 
 Go through each finding from the review and fix it:
 
@@ -149,7 +130,7 @@ After fixing, print a brief summary of what was fixed and what was skipped (with
 
 The change log tracks all fixes and skipped findings across rounds automatically — render-prompt reads them from the session log for subsequent rounds.
 
-#### 5f. Record round in change log
+#### 2e. Record round in change log
 
 Record the round's findings, fixes, and skipped items using individual commands. First start the round, then add each item, then end the round:
 
@@ -173,7 +154,7 @@ Then close the round:
 
 Finding IDs use the format "rNfM" (e.g. "r1f1" for round 1, finding 1).
 
-#### 5g. Commit round fixes (if --worktree)
+#### 2f. Commit round fixes (if --worktree)
 
 If --worktree is active, commit this round's fixes in the worktree. Write a commit message with the prefix "agentic-peer-review:" followed by a concise summary of what was fixed in this round (e.g. "agentic-peer-review: fix SQL injection in login query and add input validation"):
 
@@ -181,13 +162,13 @@ If --worktree is active, commit this round's fixes in the worktree. Write a comm
 
 If "committed" is false, no changes were made this round.
 
-#### 5h. End of round
+#### 2g. End of round
 
 If there are more rounds remaining, print: "Proceeding to next round..."
 
-### 6. Show diff and explain changes
+### 3. Show diff and explain changes
 
-Capture the diff. For worktree mode, diff against the baseline_sha (from step 4) to show only the fixes, not the synced baseline. For non-worktree mode, diff against base_commit (from step 3):
+Capture the diff. For worktree mode, diff against baseline_sha to show only the fixes, not the synced baseline. For non-worktree mode, diff against base_commit. Both values come from step 1:
 
   peer-review-cli git-diff <working_dir> <baseline_sha or base_commit>
 
@@ -198,7 +179,7 @@ If the diff is non-empty:
 
 If the diff is empty, print "No files were modified."
 
-### 7. Worktree resolution (if --worktree)
+### 4. Worktree resolution (if --worktree)
 
 If --worktree was used:
 
@@ -214,7 +195,7 @@ If the result contains a "stash_warning", print it to the user.
 
   peer-review-cli worktree teardown <worktree_path> <branch_name>
 
-### 8. Final summary
+### 5. Final summary
 
 Finalize the change log:
 

@@ -144,8 +144,12 @@ def cmd_merge(worktree_path, baseline_sha):
     # Do NOT use _run_git here — it strips whitespace which corrupts patches
     result = subprocess.run(
         [
-            "git", "-C", worktree_path,
-            "format-patch", "--stdout", f"{baseline_sha}..HEAD",
+            "git",
+            "-C",
+            worktree_path,
+            "format-patch",
+            "--stdout",
+            f"{baseline_sha}..HEAD",
         ],
         capture_output=True,
         text=True,

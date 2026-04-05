@@ -28,17 +28,17 @@ The plugin follows a strict separation: the skill definition (`skills/peer-revie
 
 All scripts are accessed via the `peer-review-cli` entrypoint in `bin/`, which is automatically on PATH when the plugin is enabled. The entrypoint dispatches to subcommands.
 
-**Data flow:** `init` → loop[ `format-output round-header` → `render-prompt | run-review` → Claude fixes → `change-log start-round/add-finding/add-fix/add-skip/end-round` → `worktree commit` (if --worktree) ] → `git-diff` → `finalize`
+**Data flow:** `init` → loop[ `render-prompt | run-review` → Claude fixes → `change-log add-finding/add-fix/add-skip` → `worktree commit` (if --worktree) ] → `git-diff` → `finalize`
 
 - `bin/peer-review-cli` — Shell entrypoint. Uses `$CLAUDE_PLUGIN_ROOT` to find the project root, calls `uv run --project` to invoke `bin.cli`.
 - `bin/cli.py` — Subcommand dispatcher. Maps subcommand names to Python modules.
 - `bin/init.py` — Unified session initialization. Combines argument parsing, project detection, change log creation, and worktree setup into one command. Prints settings box + JSON.
 - `bin/list_checks.py` — Scans `skills/peer-review/references/checks/` for `.md` files. Returns available check names. To add a check, drop a `.md` file in that directory.
-- `bin/render_prompt.py` — Accepts CLI args (--language, --checks, etc.), loads check descriptions, renders `bin/prompts/audit.j2` via Jinja2. Reads prior fixes and skipped findings from the session change log automatically.
+- `bin/render_prompt.py` — Accepts CLI args (--language, --checks, etc.), loads check descriptions, renders `bin/prompts/audit.j2` via Jinja2. Prints round header to stderr. Reads prior fixes, skipped findings, and elapsed time from the session change log automatically.
 - `bin/run_review.py` — Takes agent name and optional timeout as args, reads prompt from stdin, invokes the correct CLI. Claude and Codex receive the prompt via stdin; Gemini receives it as the `-p` argument value.
-- `bin/format_output.py` — Formatted output. Subcommands: `settings` (settings box), `round-header` (round header with optional time estimate). Uses box-drawing characters.
+- `bin/format_output.py` — Formatted output. Subcommands: `settings` (settings box), `round-header` (used internally by render-prompt). Uses box-drawing characters.
 - `bin/worktree.py` — Git worktree lifecycle. Subcommands: `setup` (creates timestamped worktree + branch), `commit` (per-round, accepts `--message`), `merge` (applies per-round commits via format-patch/am, stashes/restores uncommitted changes), `teardown`.
-- `bin/change_log.py` — Structured JSON change log + session path helper. Subcommands: `init`, `start-round`, `add-finding`, `add-fix`, `add-skip`, `end-round`, `finalize` (prints summary box + optional markdown), `render-md`. All use CLI args. Log file path is derived automatically from cwd hash.
+- `bin/change_log.py` — Structured JSON change log + session path helper. Subcommands: `init`, `add-finding`, `add-fix`, `add-skip` (all take --round-num, auto-create rounds), `finalize` (prints summary box + optional markdown), `render-md`. All use CLI args. Log file path is derived automatically from cwd hash.
 - `bin/git_diff.py` — Captures git diff between a base ref and the working tree. Returns JSON with full diff text, file list, and stats.
 - `bin/prompts/audit.j2` — Jinja2 template for the audit prompt sent to the review agent.
 - `skills/peer-review/references/checks/*.md` — Modular check definitions. Each file defines what a check looks for. Add/rename/edit files to modify available checks.

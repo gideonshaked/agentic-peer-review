@@ -6,19 +6,22 @@ Usage:
         --checks bugs,security [--framework django] [--instructions "..."] \
         [--focus src/]
 
-Prior fixes and skipped findings are read automatically from the session
-change log — no need to pass them as arguments.
+Prints the round header to stderr (so Claude sees it), then the rendered
+prompt to stdout (piped to run-review). Prior fixes and skipped findings
+are read automatically from the session change log.
 """
 
 import argparse
 import json
 import os
+import sys
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader
 
-from bin.list_checks import load_check
 from bin.change_log import session_log_path
+from bin.format_output import cmd_round_header
+from bin.list_checks import load_check
 
 PROMPTS_DIR = Path(__file__).parent / "prompts"
 
@@ -71,6 +74,28 @@ def main():
     parser.add_argument("--round-num", type=int, required=True)
     parser.add_argument("--total-rounds", type=int, required=True)
     args = parser.parse_args()
+
+    # Print round header to stderr (visible to Claude, not piped to run-review)
+    elapsed = None
+    log_path = session_log_path()
+    if os.path.exists(log_path):
+        with open(log_path, encoding="utf-8") as f:
+            log_data = json.load(f)
+        started_at = log_data.get("meta", {}).get("started_at", "")
+        if started_at:
+            from datetime import datetime, timezone
+
+            start_dt = datetime.fromisoformat(started_at)
+            elapsed = (datetime.now(timezone.utc) - start_dt).total_seconds()
+
+    # Capture header output and print to stderr
+    import io
+    from contextlib import redirect_stdout
+
+    buf = io.StringIO()
+    with redirect_stdout(buf):
+        cmd_round_header(args.round_num, args.total_rounds, elapsed)
+    print(buf.getvalue(), file=sys.stderr, end="")
 
     prior_fixes, skipped_findings = _read_prior_context(args.round_num)
 

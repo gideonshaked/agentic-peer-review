@@ -6,12 +6,10 @@ via session_log_path() — no need to pass it as an argument.
 
 Subcommands:
     init                           Create a new change log
-    start-round --round-num N      Start a new round
-    add-finding --id --file ...    Add a finding to the current round
-    add-fix --finding-id ...       Add a fix to the current round
-    add-skip --finding-id ...      Add a skipped finding to the current round
-    end-round                      Close the current round
-    finalize                       Compute summary, set completed_at, print JSON
+    add-finding --round-num N ...  Add a finding (auto-creates round)
+    add-fix --round-num N ...      Add a fix (auto-creates round)
+    add-skip --round-num N ...     Add a skipped finding (auto-creates round)
+    finalize [--log <path>]        Compute summary, print summary box, optional markdown
     render-md --output <path>      Render the finalized JSON as a markdown log file
 """
 
@@ -94,28 +92,20 @@ def cmd_init():
     print(json.dumps({"log_file": path, "base_commit": base_commit}))
 
 
-def cmd_start_round():
-    """Start a new round in the change log."""
-    parser = argparse.ArgumentParser(description="Start a new round")
-    parser.add_argument("--round-num", type=int, required=True)
-    args = parser.parse_args()
-
-    data = _load_log()
-    data["rounds"].append(
-        {
-            "round_num": args.round_num,
-            "findings": [],
-            "fixes": [],
-            "skipped": [],
-        }
-    )
-    _save_log(data)
-    print(json.dumps({"ok": True}))
+def _ensure_round(data, round_num):
+    """Ensure a round exists for the given round_num, creating it if needed."""
+    for rnd in data["rounds"]:
+        if rnd["round_num"] == round_num:
+            return rnd
+    rnd = {"round_num": round_num, "findings": [], "fixes": [], "skipped": []}
+    data["rounds"].append(rnd)
+    return rnd
 
 
 def cmd_add_finding():
-    """Add a finding to the current round."""
+    """Add a finding to a round (auto-creates the round if needed)."""
     parser = argparse.ArgumentParser(description="Add a finding")
+    parser.add_argument("--round-num", type=int, required=True)
     parser.add_argument("--id", required=True)
     parser.add_argument("--file", required=True)
     parser.add_argument("--line", default="")
@@ -125,14 +115,8 @@ def cmd_add_finding():
     args = parser.parse_args()
 
     data = _load_log()
-    if not data["rounds"]:
-        print(
-            json.dumps(
-                {"error": True, "message": "No active round. Call start-round first."}
-            )
-        )
-        sys.exit(0)
-    data["rounds"][-1]["findings"].append(
+    rnd = _ensure_round(data, args.round_num)
+    rnd["findings"].append(
         {
             "id": args.id,
             "file": args.file,
@@ -147,8 +131,9 @@ def cmd_add_finding():
 
 
 def cmd_add_fix():
-    """Add a fix to the current round."""
+    """Add a fix to a round (auto-creates the round if needed)."""
     parser = argparse.ArgumentParser(description="Add a fix")
+    parser.add_argument("--round-num", type=int, required=True)
     parser.add_argument("--finding-id", required=True)
     parser.add_argument("--file", required=True)
     parser.add_argument("--what-changed", required=True)
@@ -156,14 +141,8 @@ def cmd_add_fix():
     args = parser.parse_args()
 
     data = _load_log()
-    if not data["rounds"]:
-        print(
-            json.dumps(
-                {"error": True, "message": "No active round. Call start-round first."}
-            )
-        )
-        sys.exit(0)
-    data["rounds"][-1]["fixes"].append(
+    rnd = _ensure_round(data, args.round_num)
+    rnd["fixes"].append(
         {
             "finding_id": args.finding_id,
             "file": args.file,
@@ -176,8 +155,9 @@ def cmd_add_fix():
 
 
 def cmd_add_skip():
-    """Add a skipped finding to the current round."""
+    """Add a skipped finding to a round (auto-creates the round if needed)."""
     parser = argparse.ArgumentParser(description="Add a skipped finding")
+    parser.add_argument("--round-num", type=int, required=True)
     parser.add_argument("--finding-id", required=True)
     parser.add_argument("--file", required=True)
     parser.add_argument("--severity", required=True)
@@ -185,14 +165,8 @@ def cmd_add_skip():
     args = parser.parse_args()
 
     data = _load_log()
-    if not data["rounds"]:
-        print(
-            json.dumps(
-                {"error": True, "message": "No active round. Call start-round first."}
-            )
-        )
-        sys.exit(0)
-    data["rounds"][-1]["skipped"].append(
+    rnd = _ensure_round(data, args.round_num)
+    rnd["skipped"].append(
         {
             "finding_id": args.finding_id,
             "file": args.file,
@@ -202,15 +176,6 @@ def cmd_add_skip():
     )
     _save_log(data)
     print(json.dumps({"ok": True}))
-
-
-def cmd_end_round():
-    """Close the current round."""
-    data = _load_log()
-    if not data["rounds"]:
-        print(json.dumps({"error": True, "message": "No active round."}))
-        sys.exit(0)
-    print(json.dumps({"ok": True, "round_num": data["rounds"][-1]["round_num"]}))
 
 
 def cmd_finalize():
@@ -333,7 +298,7 @@ def cmd_render_md(output_path):
 def main():
     if len(sys.argv) < 2:
         print(
-            "Usage: change_log <init|start-round|add-finding|add-fix|add-skip|end-round|finalize|render-md> [args]",
+            "Usage: change_log <init|add-finding|add-fix|add-skip|finalize|render-md> [args]",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -344,16 +309,12 @@ def main():
 
     if cmd == "init":
         cmd_init()
-    elif cmd == "start-round":
-        cmd_start_round()
     elif cmd == "add-finding":
         cmd_add_finding()
     elif cmd == "add-fix":
         cmd_add_fix()
     elif cmd == "add-skip":
         cmd_add_skip()
-    elif cmd == "end-round":
-        cmd_end_round()
     elif cmd == "finalize":
         cmd_finalize()
     elif cmd == "render-md":

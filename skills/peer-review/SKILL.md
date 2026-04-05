@@ -71,19 +71,9 @@ The JSON includes "start_time" (unix epoch) — use it for elapsed time calculat
 
 For each round (1 through max_rounds):
 
-#### 2a. Print round header
+#### 2a. Build and execute the audit prompt
 
-Get current time and calculate elapsed seconds since start. Print the round header:
-
-  peer-review-cli format-output round-header <N> <M> --elapsed <seconds>
-
-Print the round header output as your direct text response.
-
-#### 2b. Build and execute the audit prompt
-
-IMPORTANT: render-prompt uses CLI arguments, NOT JSON on stdin. Do not pipe JSON to it. Pass all values as flags directly.
-
-Build the prompt and pipe it to the review agent in a single command:
+Build the prompt and pipe it to the review agent in a single command. This also prints the round header (to stderr) automatically:
 
   peer-review-cli render-prompt \
     --language <language> \
@@ -97,24 +87,26 @@ Build the prompt and pipe it to the review agent in a single command:
     | peer-review-cli run-review <agent> <timeout>
 
 Arguments:
-- --language, --framework, --working-dir: from step 2 (or worktree path if --worktree)
+- --language, --framework, --working-dir: from step 1 (working_dir is the worktree path if --worktree)
 - --instructions: from step 1 (may be "")
 - --focus: from step 1 (may be "")
 - --checks: comma-separated list of active check names from step 1
 - --round-num: current round (1-indexed)
 - --total-rounds: total number of rounds
 
-Prior fixes and skipped findings are read automatically from the session change log — no need to pass them.
+Prior fixes, skipped findings, elapsed time, and the round header are all handled automatically from the session change log.
+
+Print the round header from stderr as your direct text response.
 
 If the command fails (non-zero exit, e.g. timeout), print the error and continue to the next round. Do not stop the loop — prior rounds may have produced useful fixes.
 
-#### 2c. Present findings
+#### 2b. Present findings
 
 Print the raw findings from the agent as your direct text response. Do not soften, filter, or editorialize.
 
 If the agent returned no findings or explicitly said no issues were found, print "No issues found — review complete." and stop the loop early.
 
-#### 2d. Fix the findings
+#### 2c. Fix the findings
 
 Go through each finding from the review and fix it:
 
@@ -130,31 +122,25 @@ After fixing, print a brief summary of what was fixed and what was skipped (with
 
 The change log tracks all fixes and skipped findings across rounds automatically — render-prompt reads them from the session log for subsequent rounds.
 
-#### 2e. Record round in change log
+#### 2d. Record round in change log
 
-Record the round's findings, fixes, and skipped items using individual commands. First start the round, then add each item, then end the round:
-
-  peer-review-cli change-log start-round --round-num N
+Record the round's findings, fixes, and skipped items. Each command takes --round-num and auto-creates the round if needed.
 
 For each finding from the review agent:
 
-  peer-review-cli change-log add-finding --id rNfM --file <path> --line <line> --severity <level> --category <cat> --description "<text>"
+  peer-review-cli change-log add-finding --round-num N --id rNfM --file <path> --line <line> --severity <level> --category <cat> --description "<text>"
 
 For each fix you made:
 
-  peer-review-cli change-log add-fix --finding-id rNfM --file <path> --what-changed "<text>" --why "<text>"
+  peer-review-cli change-log add-fix --round-num N --finding-id rNfM --file <path> --what-changed "<text>" --why "<text>"
 
 For each finding you skipped:
 
-  peer-review-cli change-log add-skip --finding-id rNfM --file <path> --severity <level> --reason "<text>"
-
-Then close the round:
-
-  peer-review-cli change-log end-round
+  peer-review-cli change-log add-skip --round-num N --finding-id rNfM --file <path> --severity <level> --reason "<text>"
 
 Finding IDs use the format "rNfM" (e.g. "r1f1" for round 1, finding 1).
 
-#### 2f. Commit round fixes (if --worktree)
+#### 2e. Commit round fixes (if --worktree)
 
 If --worktree is active, commit this round's fixes in the worktree. Write a commit message with the prefix "agentic-peer-review:" followed by a concise summary of what was fixed in this round (e.g. "agentic-peer-review: fix SQL injection in login query and add input validation"):
 
@@ -162,7 +148,7 @@ If --worktree is active, commit this round's fixes in the worktree. Write a comm
 
 If "committed" is false, no changes were made this round.
 
-#### 2g. End of round
+#### 2f. End of round
 
 If there are more rounds remaining, print: "Proceeding to next round..."
 

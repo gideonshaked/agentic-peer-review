@@ -23,7 +23,8 @@ Then run peer review on the current workspace:
 <p align="center">
   <a href="#install">Install</a> &bull;
   <a href="#usage">Usage</a> &bull;
-  <a href="#options">Options</a>
+  <a href="#options">Options</a> &bull;
+  <a href="#checks">Checks</a>
 </p>
 
 ## Install
